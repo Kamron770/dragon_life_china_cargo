@@ -120,13 +120,18 @@ Agar `ADMIN_PASSWORD` umuman berilmagan bo'lsa, birinchi ishga tushishda tasodif
 
 ### Google Sheets ulash
 
-1. [Google Cloud Console](https://console.cloud.google.com/) → yangi loyiha → **Google Sheets API** va **Google Drive API** ni yoqing.
-2. **Service account** yarating → **Keys → JSON** yuklab oling → loyiha papkasiga `google-credentials.json` nomi bilan qo'ying.
-3. Yangi Google Sheets jadval oching va uni service account email manziliga (**Editor**) ulashing.
-4. `.env` da `GOOGLE_SHEET_ID=` ga jadval ID sini yozing (URL dagi `/d/` va `/edit` orasidagi qism).
-   Render kabi hostinglarda fayl o'rniga `GOOGLE_CREDENTIALS_JSON` ga JSON faylning butun matnini qo'ying.
+1. [console.cloud.google.com](https://console.cloud.google.com) → yangi loyiha (`dragonlife`).
+2. **APIs & Services → Library**: **Google Sheets API** va **Google Drive API** → **Enable**.
+3. **IAM & Admin → Service Accounts → Create service account** (`dragonlife-sheets`) → **Done**.
+4. Service account → **Keys → Add key → Create new key → JSON** — fayl yuklab olinadi. Uni hech kimga bermang.
+5. [sheets.google.com](https://sheets.google.com) → yangi jadval → **Share** → JSON fayldagi `client_email` ni **Editor** sifatida qo'shing.
+6. Render → **Environment**:
+   - `GOOGLE_SHEET_ID` — jadval havolasi (to'liq URL yoki faqat ID);
+   - `GOOGLE_CREDENTIALS_JSON` — JSON faylning **butun matni**.
+   Mahalliy ishga tushirishda buning o'rniga faylni `google-credentials.json` deb qo'yish ham mumkin.
+7. Panel → **⚙️ Bot va Google Sheets**: robot email, oxirgi nusxa vaqti va xatolar ko'rinadi; **Hozir nusxalash** tugmasi bor.
 
-Tizim har o'zgarishdan keyin (ko'pi bilan `SHEETS_SYNC_INTERVAL` soniyada bir marta) jadvalga «Mijozlar», «Yuklar», «Tarix» varaqlarini yangilab yozadi. Asosiy ma'lumot bazada saqlanadi, Sheets — nusxa.
+Tizim har o'zgarishdan keyin (ko'pi bilan `SHEETS_SYNC_INTERVAL` soniyada bir marta) «Mijozlar», «Yuklar», «Tarix», «Narxlar» varaqlarini yangilaydi. Asosiy ma'lumot bazada, Sheets — nusxa (jadvalda qo'lda o'zgartirilgan narsa keyingi nusxada qayta yoziladi).
 
 ## Tuzilma
 

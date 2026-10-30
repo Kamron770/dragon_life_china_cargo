@@ -34,6 +34,14 @@ def _db_url() -> tuple[str, dict]:
     return url, connect_args
 
 
+def _sheet_id(raw: str) -> str:
+    """Accepts the ID or the whole link https://docs.google.com/spreadsheets/d/<ID>/edit..."""
+    raw = raw.strip()
+    if "/d/" in raw:
+        raw = raw.split("/d/", 1)[1].split("/", 1)[0]
+    return raw.split("?")[0].split("#")[0]
+
+
 class Settings:
     BOT_TOKEN: str = "".join(os.getenv("BOT_TOKEN", "").split())  # drop spaces/newlines from pasting
     DATABASE_URL, DB_CONNECT_ARGS = _db_url()
@@ -55,7 +63,7 @@ class Settings:
     # Google Sheets backup (optional)
     GOOGLE_CREDENTIALS_FILE: str = os.getenv("GOOGLE_CREDENTIALS_FILE", "")
     GOOGLE_CREDENTIALS_JSON: str = os.getenv("GOOGLE_CREDENTIALS_JSON", "")  # whole JSON key as text
-    GOOGLE_SHEET_ID: str = os.getenv("GOOGLE_SHEET_ID", "")
+    GOOGLE_SHEET_ID: str = _sheet_id(os.getenv("GOOGLE_SHEET_ID", ""))
     SHEETS_SYNC_INTERVAL: int = _int("SHEETS_SYNC_INTERVAL", 60)
 
     # Contacts shown in the bot

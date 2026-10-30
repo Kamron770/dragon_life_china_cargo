@@ -23,7 +23,13 @@
 <div class="card">
   <h2>📊 {{ t('sheets') }}</h2>
   {% if sheets_on %}
-    <p><a href="https://docs.google.com/spreadsheets/d/{{ sheet_id }}" target="_blank">{{ t('open') }} ↗</a></p>
+    <div class="kv">
+      <div>{{ t('sheet') }}</div><div><a href="https://docs.google.com/spreadsheets/d/{{ sheet_id }}" target="_blank">{{ t('open') }} ↗</a></div>
+      <div>{{ t('robot_email') }}</div><div class="mono" style="word-break:break-all">{{ robot_email or '—' }}</div>
+      <div>{{ t('last_sync') }}</div><div>{{ sheets_status.last_ok.strftime('%d.%m.%Y %H:%M') ~ ' UTC' if sheets_status.last_ok else '—' }}</div>
+      {% if sheets_status.error %}<div>Xato / Ошибка</div><div style="color:#b91c1c;word-break:break-all">{{ sheets_status.error }}</div>{% endif %}
+    </div>
+    <p class="muted" style="font-size:12px">{{ t('share_hint') }}</p>
     <form method="post" action="/admin/sync"><button class="btn ghost">🔄 {{ t('sync_now') }}</button></form>
   {% else %}
     <p class="muted">{{ t('sheets_off') }}</p>

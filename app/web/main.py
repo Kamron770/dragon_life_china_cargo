@@ -444,7 +444,7 @@ def _routes(app: FastAPI) -> None:
         async with SessionLocal() as s:
             op = await current(request, s, admin=True)
         return render(request, "settings.html", op, sheets_on=sheets.enabled(), sheet_id=settings.GOOGLE_SHEET_ID,
-                      bot=await bot_info())
+                      bot=await bot_info(), robot_email=sheets.service_email(), sheets_status=sheets.STATUS)
 
     @app.post("/admin/bot/reconnect")
     async def bot_reconnect(request: Request):
@@ -561,5 +561,5 @@ def _routes(app: FastAPI) -> None:
             await sheets.sync_now()
             flash(request, tr(lang(request), "synced"))
         except Exception as e:
-            flash(request, f"Google Sheets: {e}", "error")
+            flash(request, f"Google Sheets: {sheets.STATUS.get('error') or e}", "error")
         return RedirectResponse("/admin/settings", status_code=303)

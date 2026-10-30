@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import select
@@ -12,6 +13,29 @@ from .config import BASE_DIR, settings
 log = logging.getLogger(__name__)
 
 _dirty = asyncio.Event()
+# Shown in the admin panel
+STATUS: dict = {"last_ok": None, "error": None}
+
+
+def _credentials() -> dict | None:
+    if settings.GOOGLE_CREDENTIALS_JSON:
+        # strict=False: accepts a key pasted with real line breaks inside private_key
+        return json.loads(settings.GOOGLE_CREDENTIALS_JSON.strip(), strict=False)
+    if settings.GOOGLE_CREDENTIALS_FILE:
+        cred = Path(settings.GOOGLE_CREDENTIALS_FILE)
+        if not cred.is_absolute():
+            cred = BASE_DIR / cred
+        return json.loads(cred.read_text(), strict=False)
+    return None
+
+
+def service_email() -> str | None:
+    """The robot email the spreadsheet must be shared with."""
+    try:
+        return (_credentials() or {}).get("client_email")
+    except Exception as e:
+        STATUS["error"] = f"Google key (JSON) o'qilmadi: {e}"
+        return None
 
 
 def enabled() -> bool:
@@ -60,13 +84,7 @@ async def _collect() -> dict[str, list[list]]:
 def _write(data: dict[str, list[list]]) -> None:
     import gspread
 
-    if settings.GOOGLE_CREDENTIALS_JSON:
-        gc = gspread.service_account_from_dict(json.loads(settings.GOOGLE_CREDENTIALS_JSON))
-    else:
-        cred = Path(settings.GOOGLE_CREDENTIALS_FILE)
-        if not cred.is_absolute():
-            cred = BASE_DIR / cred
-        gc = gspread.service_account(filename=str(cred))
+    gc = gspread.service_account_from_dict(_credentials())
     book = gc.open_by_key(settings.GOOGLE_SHEET_ID)
     existing = {ws.title: ws for ws in book.worksheets()}
     for title, rows in data.items():
@@ -80,8 +98,24 @@ async def sync_now() -> None:
     if not enabled():
         return
     data = await _collect()
-    await asyncio.to_thread(_write, data)
+    try:
+        await asyncio.to_thread(_write, data)
+    except Exception as e:
+        STATUS["error"] = _explain(e)
+        raise
+    STATUS.update(last_ok=datetime.now(timezone.utc), error=None)
     log.info("Google Sheets synced")
+
+
+def _explain(e: Exception) -> str:
+    text = f"{type(e).__name__}: {e}"
+    if "PERMISSION_DENIED" in text or "403" in text:
+        if "has not been used" in text or "disabled" in text:
+            return text + " → Google Cloud'da Google Sheets API / Google Drive API yoqilmagan"
+        return text + " → jadval robot email'iga Editor sifatida ulashilmagan"
+    if "404" in text or "NOT_FOUND" in text:
+        return text + " → GOOGLE_SHEET_ID noto'g'ri"
+    return text
 
 
 async def sync_loop() -> None:
