@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from .. import sheets
 from ..db import SessionLocal
 from ..models import Cargo, Client, StatusHistory
-from ..services import get_settings, normalize_phone, normalize_tracking
+from ..services import get_settings, get_tariffs, normalize_phone, normalize_tracking
 from ..statuses import ACTIVE, INACTIVE, WAITING, label
 from ..texts import WELCOME, all_variants, kind_info, kind_name, t
 
@@ -150,8 +150,9 @@ async def show_kind_info(m: Message, state: FSMContext, client: Client, kind: st
     await state.update_data(kind=kind)
     async with SessionLocal() as s:
         st = await get_settings(s)
+        tariffs = await get_tariffs(s, kind)
     await m.answer(
-        kind_info(kind, client.code(kind), lang, st),
+        kind_info(kind, client.code(kind), lang, st, tariffs),
         disable_web_page_preview=True,
         reply_markup=kb([t("btn_enter_track", lang)], [t("btn_no_track", lang)], [t("btn_back", lang), t("btn_home", lang)]),
     )

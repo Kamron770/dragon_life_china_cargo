@@ -1,25 +1,8 @@
 {% extends "base.html" %}
-{% block title %}{{ t('settings') }}{% endblock %}
-{% block heading %}⚙️ {{ t('settings') }}{% endblock %}
+{% block title %}{{ t('sheets') }}{% endblock %}
+{% block heading %}📊 {{ t('sheets') }}{% endblock %}
 {% block content %}
-<form method="post" action="/admin/settings" class="form">
-<div class="grid2">
-  {% for p, icon in [('avia', '✈️ AVIA'), ('fura', '🚛 FURA')] %}
-  <div class="card">
-    <h2>{{ icon }} — {{ t('prices') }}</h2>
-    <label>{{ t('price_usd') }}</label><input name="{{ p }}_price" value="{{ values.get(p ~ '_price', '') }}" inputmode="decimal">
-    <label>{{ t('min_weight') }}</label><input name="{{ p }}_min_weight" value="{{ values.get(p ~ '_min_weight', '') }}" inputmode="decimal">
-    <label>{{ t('pack_days') }}</label><input name="{{ p }}_pack_days" value="{{ values.get(p ~ '_pack_days', '') }}">
-    <label>{{ t('transit_days') }}</label><input name="{{ p }}_transit_days" value="{{ values.get(p ~ '_transit_days', '') }}">
-    <div class="muted" style="font-size:12px;margin-top:8px">{{ t('empty_hint') }}</div>
-  </div>
-  {% endfor %}
-</div>
-<button class="btn big">{{ t('save') }}</button>
-</form>
-
-<div class="card" style="margin-top:16px">
-  <h2>📊 {{ t('sheets') }}</h2>
+<div class="card">
   {% if sheets_on %}
     <p><a href="https://docs.google.com/spreadsheets/d/{{ sheet_id }}" target="_blank">{{ t('open') }} ↗</a></p>
     <form method="post" action="/admin/sync"><button class="btn ghost">🔄 {{ t('sync_now') }}</button></form>

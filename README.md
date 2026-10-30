@@ -49,7 +49,9 @@ Sahifalar:
 - **Skanerlash** — USB/Bluetooth shtrix-kod skaner, qo'lda kiritish yoki telefon kamerasi. Skanerlangandan keyin tizim keyingi holatni taklif qiladi: «Holatni o'zgartirasizmi? → Xitoydagi omborga yetib keldi» → bir bosish bilan tasdiqlanadi va keyingi skanga qaytadi.
 - **Yuk qo'shish** — mijoz kodi (A001/F001) bo'yicha. Trek kod bo'sh qoldirilsa — avtomatik yaratiladi va mijozga xabar boradi.
 - **Mijozlar** — ro'yxat va har bir mijozning yuklari.
-- **Operatorlar** va **Sozlamalar** (narx, minimal og'irlik, muddatlar — botda darhol yangilanadi).
+- **Operatorlar** — login/parol va rollar.
+- **💰 Narxlar va muddatlar** — AVIA va FURA uchun narxlar ro'yxati: administrator narx qatorlarini qo'shadi, o'zgartiradi, o'chiradi yoki vaqtincha yashiradi (narx, valyuta, birlik: 1 kg / 1 m³ / 1 dona, minimal miqdor, o'zbekcha/ruscha nomi). Muddatlar ham shu yerda. Pastda «Botda shunday ko'rinadi» namunasi bor, o'zgarish botda darhol ko'rinadi.
+- **📊 Google Sheets** — jadvalni ochish va qo'lda nusxalash.
 
 Panel o'zbek va rus tillarida (pastki chap burchakda UZ / RU).
 

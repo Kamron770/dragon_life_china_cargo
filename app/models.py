@@ -95,3 +95,20 @@ class Setting(Base):
 
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[str] = mapped_column(Text, default="")
+
+
+class Tariff(Base):
+    """One price line shown in the bot, e.g. FURA: 1 m³ — 250 USD. Managed from the admin panel."""
+
+    __tablename__ = "tariffs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(8), index=True)  # AVIA | FURA
+    title_uz: Mapped[str] = mapped_column(String(128), default="")
+    title_ru: Mapped[str] = mapped_column(String(128), default="")
+    price: Mapped[float] = mapped_column(Float)
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    unit: Mapped[str] = mapped_column(String(8), default="kg")  # kg | m3 | piece
+    min_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sort: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)

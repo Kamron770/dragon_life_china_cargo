@@ -27,7 +27,7 @@ def _fmt(dt) -> str:
 
 async def _collect() -> dict[str, list[list]]:
     from .db import SessionLocal
-    from .models import Cargo, Client, StatusHistory
+    from .models import Cargo, Client, StatusHistory, Tariff
     from .statuses import label
 
     async with SessionLocal() as s:
@@ -36,6 +36,7 @@ async def _collect() -> dict[str, list[list]]:
         history = (await s.scalars(
             select(StatusHistory).options(selectinload(StatusHistory.operator)).order_by(StatusHistory.id)
         )).all()
+        tariffs = (await s.scalars(select(Tariff).order_by(Tariff.kind, Tariff.sort, Tariff.id))).all()
 
     return {
         "Mijozlar": [["ID", "AVIA kodi", "FURA kodi", "Ism", "Telefon", "Telegram ID", "Username", "Til", "Ro'yxatdan o'tgan"]]
@@ -49,6 +50,9 @@ async def _collect() -> dict[str, list[list]]:
         "Tarix": [["ID", "Yuk ID", "Holat", "Operator", "Izoh", "Vaqt"]]
         + [[h.id, h.cargo_id, label(h.status, "uz"), h.operator.username if h.operator else "bot",
             h.comment or "", _fmt(h.created_at)] for h in history],
+        "Narxlar": [["ID", "Turi", "Nomi (uz)", "Nomi (ru)", "Narx", "Valyuta", "Birlik", "Minimal", "Botda"]]
+        + [[x.id, x.kind, x.title_uz, x.title_ru, x.price, x.currency, x.unit, x.min_amount or "",
+            "ha" if x.is_active else "yo'q"] for x in tariffs],
     }
 
 

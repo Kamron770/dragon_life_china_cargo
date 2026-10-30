@@ -1,4 +1,6 @@
 """All bot texts in Uzbek and Russian."""
+import html
+
 from .config import (
     LINK_FORBIDDEN, LINK_TRACK_HELP, LINK_VOLUME_HELP,
     WAREHOUSE_ADDRESS_CN, WAREHOUSE_PHONE, WAREHOUSE_ZIP, settings,
@@ -238,10 +240,33 @@ def kind_name(kind: str, lang: str) -> str:
     return kind
 
 
-def kind_info(kind: str, code: str, lang: str, s: dict[str, str]) -> str:
+UNITS = {
+    "kg": {"uz": ("1 kilogramm", "kg"), "ru": ("1 килограмм", "кг")},
+    "m3": {"uz": ("1 m³ (kub metr)", "m³"), "ru": ("1 м³ (кубометр)", "м³")},
+    "piece": {"uz": ("1 dona", "dona"), "ru": ("1 шт.", "шт.")},
+}
+
+
+def num(x: float | None) -> str:
+    """10.0 -> '10', 0.5 -> '0.5'."""
+    return "" if x is None else f"{x:g}"
+
+
+def price_line(tariff, lang: str) -> str:
+    one, short = UNITS.get(tariff.unit, UNITS["kg"])[lang if lang == "ru" else "uz"]
+    title = html.escape((tariff.title_ru if lang == "ru" else tariff.title_uz) or tariff.title_uz or "")
+    price = f"<b>{num(tariff.price)} {html.escape(tariff.currency)}</b>"
+    if lang == "ru":
+        line = (f"от {num(tariff.min_amount)} {short}, " if tariff.min_amount else "") + f"за {one} — {price}"
+    else:
+        line = (f"{num(tariff.min_amount)} {short} dan boshlab, " if tariff.min_amount else "") + f"{one} uchun — {price}"
+    return f"▫️ <b>{title}:</b> {line}" if title else line
+
+
+def kind_info(kind: str, code: str, lang: str, s: dict[str, str], tariffs: list | None = None) -> str:
     """Warehouse address (translation first, then the original Chinese) + terms + links."""
     p = "avia" if kind == "AVIA" else "fura"
-    price, min_w = s.get(f"{p}_price", ""), s.get(f"{p}_min_weight", "")
+    prices = "\n".join(price_line(x, lang) for x in (tariffs or []))
     pack, transit = s.get(f"{p}_pack_days", ""), s.get(f"{p}_transit_days", "")
     icon = "✈️" if kind == "AVIA" else "🚛"
     kname = kind_name(kind, lang)
@@ -273,8 +298,8 @@ def kind_info(kind: str, code: str, lang: str, s: dict[str, str]) -> str:
         else:
             parts.append("⏱ По срокам доставки уточняйте у нашего оператора.\n")
         parts.append(f"💰 <b>Цены на «{kname}» карго:</b>")
-        if price:
-            parts.append((f"от {min_w} кг, " if min_w else "") + f"за 1 килограмм — <b>{price} USD</b>\n")
+        if prices:
+            parts.append(prices + "\n")
         else:
             parts.append("уточняйте у нашего оператора\n")
         parts += [
@@ -302,8 +327,8 @@ def kind_info(kind: str, code: str, lang: str, s: dict[str, str]) -> str:
         else:
             parts.append("⏱ Yetkazib berish muddatlarini operatorimizdan aniqlang.\n")
         parts.append(f"💰 <b>«{kname}» kargo narxlari:</b>")
-        if price:
-            parts.append((f"{min_w} kg dan boshlab, " if min_w else "") + f"1 kilogramm uchun — <b>{price} USD</b>\n")
+        if prices:
+            parts.append(prices + "\n")
         else:
             parts.append("operatorimizdan aniqlang\n")
         parts += [

@@ -84,3 +84,14 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;font-wei
   .kv{grid-template-columns:110px 1fr}
 }
 @media print{.side,.top,.no-print{display:none!important}.main{padding:0}body{background:#fff}}
+h3.sub{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:18px 0 8px}
+.price-table input,.price-table select{width:100%;padding:7px 8px}
+.price-table .w-num{min-width:70px}.price-table .w-cur{min-width:56px;max-width:70px}
+.price-table td{padding:6px 4px}
+.add-price{margin-top:10px}
+.add-price summary{list-style:none;cursor:pointer}
+.add-price summary::-webkit-details-marker{display:none}
+.add-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 12px;margin-top:6px}
+.add-grid label{margin-top:6px}
+.preview{margin-top:16px;background:#f0f4f8;border-radius:10px;padding:12px 14px;line-height:1.6;border-left:4px solid var(--red)}
+.price-table select{min-width:80px}

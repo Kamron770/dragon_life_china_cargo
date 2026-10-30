@@ -16,12 +16,13 @@ from starlette.middleware.sessions import SessionMiddleware
 from .. import sheets
 from ..config import settings
 from ..db import DEFAULT_SETTINGS, SessionLocal
-from ..models import Cargo, Client, Operator, Setting, StatusHistory, utcnow
+from ..models import Cargo, Client, Operator, Setting, StatusHistory, Tariff, utcnow
 from ..security import hash_password, verify_password
 from ..services import (
-    add_history, assign_tracking, normalize_tracking, notify_tracking, parse_client_code, set_status,
+    add_history, assign_tracking, get_tariffs, normalize_tracking, notify_tracking, parse_client_code, set_status,
 )
 from ..statuses import AT_CHINA, BADGE, ORDER, ROLES, WAITING, can_set, label, next_status, role_kinds, role_targets
+from ..texts import num, price_line
 from .i18n import tr
 
 HERE = Path(__file__).resolve().parent
@@ -414,28 +415,103 @@ def _routes(app: FastAPI) -> None:
                 flash(request, tr(lang(request), "saved"))
         return RedirectResponse("/admin/operators", status_code=303)
 
-    # ----- admin: settings -----
+    # ----- admin: settings (Google Sheets) -----
     @app.get("/admin/settings")
     async def settings_page(request: Request):
         async with SessionLocal() as s:
             op = await current(request, s, admin=True)
-            values = {r.key: r.value for r in (await s.scalars(select(Setting))).all()}
-        return render(request, "settings.html", op, values=values, sheets_on=sheets.enabled(),
-                      sheet_id=settings.GOOGLE_SHEET_ID)
+        return render(request, "settings.html", op, sheets_on=sheets.enabled(), sheet_id=settings.GOOGLE_SHEET_ID)
 
-    @app.post("/admin/settings")
-    async def settings_save(request: Request):
+    # ----- admin: prices & delivery times -----
+    @app.get("/admin/prices")
+    async def prices_page(request: Request):
+        async with SessionLocal() as s:
+            op = await current(request, s, admin=True)
+            values = {r.key: r.value for r in (await s.scalars(select(Setting))).all()}
+            tariffs = await get_tariffs(s, active_only=False)
+        by_kind = {k: [x for x in tariffs if x.kind == k] for k in ("AVIA", "FURA")}
+        preview = {k: [price_line(x, lang(request)) for x in v if x.is_active] for k, v in by_kind.items()}
+        return render(request, "prices.html", op, values=values, by_kind=by_kind, preview=preview, num=num)
+
+    @app.post("/admin/prices/days")
+    async def days_save(request: Request):
         form = await request.form()
         async with SessionLocal() as s:
             await current(request, s, admin=True)
             for key in DEFAULT_SETTINGS:
                 if key in form:
                     row = await s.get(Setting, key) or Setting(key=key)
-                    row.value = str(form[key]).strip().replace(",", ".") if "price" in key or "weight" in key else str(form[key]).strip()
+                    row.value = str(form[key]).strip()
                     s.add(row)
             await s.commit()
         flash(request, tr(lang(request), "saved"))
-        return RedirectResponse("/admin/settings", status_code=303)
+        return RedirectResponse("/admin/prices", status_code=303)
+
+    def _read_tariff(form) -> dict | None:
+        def f(name):
+            raw = str(form.get(name, "")).strip().replace(",", ".")
+            return float(raw) if raw else None
+        try:
+            price, min_amount = f("price"), f("min_amount")
+            sort = int(str(form.get("sort", "0")).strip() or 0)
+        except ValueError:
+            return None
+        if price is None or price < 0 or (min_amount is not None and min_amount < 0):
+            return None
+        return {
+            "title_uz": str(form.get("title_uz", "")).strip()[:128],
+            "title_ru": str(form.get("title_ru", "")).strip()[:128],
+            "price": price, "min_amount": min_amount, "sort": sort,
+            "unit": form.get("unit") if form.get("unit") in ("kg", "m3", "piece") else "kg",
+            "currency": (str(form.get("currency", "USD")).strip().upper() or "USD")[:8],
+            "is_active": bool(form.get("is_active")),
+        }
+
+    @app.post("/admin/prices")
+    async def tariff_add(request: Request):
+        form = await request.form()
+        async with SessionLocal() as s:
+            await current(request, s, admin=True)
+            data = _read_tariff(form)
+            kind = form.get("kind")
+            if not data or kind not in ("AVIA", "FURA"):
+                flash(request, tr(lang(request), "bad_price"), "error")
+            else:
+                data["is_active"] = True
+                s.add(Tariff(kind=kind, **data))
+                await s.commit()
+                sheets.mark_dirty()
+                flash(request, tr(lang(request), "saved"))
+        return RedirectResponse("/admin/prices", status_code=303)
+
+    @app.post("/admin/prices/{tariff_id}")
+    async def tariff_edit(request: Request, tariff_id: int):
+        form = await request.form()
+        async with SessionLocal() as s:
+            await current(request, s, admin=True)
+            tariff = await s.get(Tariff, tariff_id)
+            data = _read_tariff(form)
+            if not tariff or not data:
+                flash(request, tr(lang(request), "bad_price"), "error")
+            else:
+                for k, v in data.items():
+                    setattr(tariff, k, v)
+                await s.commit()
+                sheets.mark_dirty()
+                flash(request, tr(lang(request), "saved"))
+        return RedirectResponse("/admin/prices", status_code=303)
+
+    @app.post("/admin/prices/{tariff_id}/delete")
+    async def tariff_delete(request: Request, tariff_id: int):
+        async with SessionLocal() as s:
+            await current(request, s, admin=True)
+            tariff = await s.get(Tariff, tariff_id)
+            if tariff:
+                await s.delete(tariff)
+                await s.commit()
+                sheets.mark_dirty()
+                flash(request, tr(lang(request), "deleted"))
+        return RedirectResponse("/admin/prices", status_code=303)
 
     @app.post("/admin/sync")
     async def sync(request: Request):

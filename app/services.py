@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import sheets
-from .models import Cargo, Client, Operator, Setting, StatusHistory, utcnow
+from .models import Cargo, Client, Operator, Setting, StatusHistory, Tariff, utcnow
 from .statuses import label
 from .texts import kind_name, t
 
@@ -51,6 +51,15 @@ def normalize_phone(raw: str) -> str | None:
 async def get_settings(s: AsyncSession) -> dict[str, str]:
     rows = (await s.scalars(select(Setting))).all()
     return {r.key: r.value for r in rows}
+
+
+async def get_tariffs(s: AsyncSession, kind: str | None = None, active_only: bool = True) -> list[Tariff]:
+    q = select(Tariff).order_by(Tariff.kind, Tariff.sort, Tariff.id)
+    if kind:
+        q = q.where(Tariff.kind == kind)
+    if active_only:
+        q = q.where(Tariff.is_active.is_(True))
+    return list((await s.scalars(q)).all())
 
 
 async def generate_tracking(s: AsyncSession, kind: str) -> str:

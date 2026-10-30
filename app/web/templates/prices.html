@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ t('prices') }}{% endblock %}
+{% block heading %}💰 {{ t('prices') }}{% endblock %}
+{% macro unit_select(form_id, current) -%}
+  <select name="unit" {% if form_id %}form="{{ form_id }}"{% endif %}>
+    {% for u in ['kg', 'm3', 'piece'] %}<option value="{{ u }}" {{ 'selected' if u == current }}>{{ t('unit_' ~ u) }}</option>{% endfor %}
+  </select>
+{%- endmacro %}
+{% block content %}
+{% for kind, icon in [('AVIA', '✈️'), ('FURA', '🚛')] %}
+{% set p = kind|lower %}
+<div class="card">
+  <h2>{{ icon }} {{ kind }}</h2>
+
+  <h3 class="sub">{{ t('price_list') }}</h3>
+  {% if by_kind[kind] %}
+  <div class="table-wrap">
+  <table class="price-table">
+    <thead><tr>
+      <th>{{ t('title_uz') }}</th><th>{{ t('title_ru') }}</th><th>{{ t('price') }}</th><th>{{ t('currency') }}</th>
+      <th>{{ t('unit') }}</th><th>{{ t('min_amount') }}</th><th>{{ t('sort') }}</th><th>{{ t('shown_in_bot') }}</th><th></th>
+    </tr></thead>
+    <tbody>
+    {% for x in by_kind[kind] %}
+      {% set fid = 'tf' ~ x.id %}
+      <tr>
+        <td><input form="{{ fid }}" name="title_uz" value="{{ x.title_uz }}" placeholder="—"></td>
+        <td><input form="{{ fid }}" name="title_ru" value="{{ x.title_ru }}" placeholder="—"></td>
+        <td><input form="{{ fid }}" name="price" value="{{ num(x.price) }}" inputmode="decimal" required class="w-num"></td>
+        <td><input form="{{ fid }}" name="currency" value="{{ x.currency }}" class="w-cur"></td>
+        <td>{{ unit_select(fid, x.unit) }}</td>
+        <td><input form="{{ fid }}" name="min_amount" value="{{ num(x.min_amount) }}" inputmode="decimal" class="w-num"></td>
+        <td><input form="{{ fid }}" name="sort" value="{{ x.sort }}" inputmode="numeric" class="w-cur"></td>
+        <td style="text-align:center"><input form="{{ fid }}" type="checkbox" name="is_active" value="1" {{ 'checked' if x.is_active }}></td>
+        <td class="row-actions">
+          <form id="{{ fid }}" method="post" action="/admin/prices/{{ x.id }}"><button class="btn sm">{{ t('save') }}</button></form>
+          <form method="post" action="/admin/prices/{{ x.id }}/delete" data-msg="{{ t('confirm_delete') }}" onsubmit="return confirm(this.dataset.msg)">
+            <button class="btn sm ghost">🗑</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <p class="muted">{{ t('no_prices') }}</p>
+  {% endif %}
+
+  <details class="add-price" {{ 'open' if not by_kind[kind] }}>
+    <summary class="btn ghost sm">➕ {{ t('add_price') }}</summary>
+    <form method="post" action="/admin/prices" class="form add-grid">
+      <input type="hidden" name="kind" value="{{ kind }}">
+      <div><label>{{ t('price') }} *</label><input name="price" inputmode="decimal" required placeholder="3"></div>
+      <div><label>{{ t('currency') }}</label><input name="currency" value="USD"></div>
+      <div><label>{{ t('unit') }}</label>{{ unit_select('', 'kg') }}</div>
+      <div><label>{{ t('min_amount') }}</label><input name="min_amount" inputmode="decimal" placeholder="0.5"></div>
+      <div><label>{{ t('title_uz') }}</label><input name="title_uz" placeholder="{{ t('title_hint') }}"></div>
+      <div><label>{{ t('title_ru') }}</label><input name="title_ru"></div>
+      <div><label>{{ t('sort') }}</label><input name="sort" value="0" inputmode="numeric"></div>
+      <div style="align-self:end"><button class="btn">{{ t('save') }}</button></div>
+    </form>
+  </details>
+
+  <h3 class="sub">{{ t('delivery_times') }}</h3>
+  <form method="post" action="/admin/prices/days" class="form add-grid">
+    <div><label>{{ t('pack_days') }}</label><input name="{{ p }}_pack_days" value="{{ values.get(p ~ '_pack_days', '') }}"></div>
+    <div><label>{{ t('transit_days') }}</label><input name="{{ p }}_transit_days" value="{{ values.get(p ~ '_transit_days', '') }}"></div>
+    <div style="align-self:end"><button class="btn">{{ t('save') }}</button></div>
+  </form>
+  <div class="muted" style="font-size:12px;margin-top:6px">{{ t('days_hint') }}</div>
+
+  <div class="preview">
+    <div class="muted" style="font-size:12px;margin-bottom:6px">👁 {{ t('bot_preview') }}:</div>
+    {% if lang == 'ru' %}<b>💰 Цены на «{{ 'АВИА' if kind == 'AVIA' else 'ФУРА' }}» карго:</b>{% else %}<b>💰 «{{ kind }}» kargo narxlari:</b>{% endif %}<br>
+    {% if preview[kind] %}{% for line in preview[kind] %}{{ line|safe }}<br>{% endfor %}
+    {% else %}{{ 'уточняйте у нашего оператора' if lang == 'ru' else 'operatorimizdan aniqlang' }}{% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
