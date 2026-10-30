@@ -75,12 +75,46 @@ docker compose up -d --build
 
 > Telefon kamerasi bilan skanerlash uchun panel **HTTPS** orqali ochilishi kerak (masalan, nginx + Let's Encrypt). USB skaner oddiy HTTP da ham ishlaydi.
 
+## 🚀 Render'da ishga tushirish (sinov uchun)
+
+Repoda tayyor `render.yaml` bor — Render hamma narsani (server + PostgreSQL bazasi) o'zi yaratadi.
+
+**1. Bot tokenini oling**
+1. Telegram'da [@BotFather](https://t.me/BotFather) ni oching → `/newbot`.
+2. Bot nomini (masalan `Dragon Life Cargo`) va username'ini (masalan `dragonlife_cargo_bot`) yozing.
+3. BotFather bergan tokenni (`123456789:AA...`) saqlab qo'ying. **Uni hech kimga bermang.**
+
+**2. Render'da joylashtiring**
+1. [render.com](https://render.com) da GitHub orqali ro'yxatdan o'ting.
+2. **New → Blueprint** → `dragon_life_china_cargo` repozitoriyasini tanlang (kerak bo'lsa Render'ga GitHub ruxsatini bering).
+3. Branch: kod qaysi branchda bo'lsa o'shani tanlang (`main` ga birlashtirilgan bo'lsa — `main`).
+4. Render quyidagilarni so'raydi:
+   - `BOT_TOKEN` — 1-qadamdagi token;
+   - `ADMIN_PASSWORD` — panelga kirish uchun kuchli parol;
+   - `GOOGLE_SHEET_ID`, `GOOGLE_CREDENTIALS_JSON` — hozircha bo'sh qoldirsa bo'ladi (pastga qarang).
+5. **Apply** ni bosing. 3–5 daqiqada tayyor bo'ladi.
+
+**3. Tekshiring**
+- Panel manzili Render'da ko'rinadi, masalan `https://dragonlife-cargo.onrender.com` → login `admin` + siz bergan parol.
+- Telegram'da botingizni oching → `/start`. Bot webhook rejimida avtomatik ulanadi, qo'shimcha sozlash kerak emas.
+
+**Google Sheets'ni keyin ulash:** Render → servis → **Environment** → `GOOGLE_SHEET_ID` va `GOOGLE_CREDENTIALS_JSON` (service account JSON faylining **butun matni**) ni kiriting → **Save** (servis qayta ishga tushadi).
+
+### Bepul tarifdagi cheklovlar
+
+- Server 15 daqiqa ishlatilmasa **uxlaydi**. Keyingi xabar yoki panelga kirishda ~1 daqiqada uyg'onadi — shu sababli birinchi javob kechikadi. Ma'lumotlar yo'qolmaydi.
+- Uyg'onganda bot foydalanuvchi qaysi qadamda turganini unutadi (masalan, trek kod kiritish oynasi) — mijoz menyudan qaytadan tanlaydi. Ro'yxatdan o'tish va yuklar bazada saqlanib qoladi.
+- Bepul PostgreSQL bazasining **muddati cheklangan** (Render shartlarini tekshiring) — muddat tugasa ma'lumotlar o'chadi.
+
+**Haqiqiy ish uchun** (mijozlar bilan) pullik tarifga o'ting: Render'da web servisni **Starter** ga, bazani pullik **PostgreSQL** ga o'zgartiring — `render.yaml` dagi `plan: free` qatorlarini almashtirish kifoya. Shunda server uxlamaydi va baza doimiy saqlanadi.
+
 ### Google Sheets ulash
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → yangi loyiha → **Google Sheets API** va **Google Drive API** ni yoqing.
 2. **Service account** yarating → **Keys → JSON** yuklab oling → loyiha papkasiga `google-credentials.json` nomi bilan qo'ying.
 3. Yangi Google Sheets jadval oching va uni service account email manziliga (**Editor**) ulashing.
 4. `.env` da `GOOGLE_SHEET_ID=` ga jadval ID sini yozing (URL dagi `/d/` va `/edit` orasidagi qism).
+   Render kabi hostinglarda fayl o'rniga `GOOGLE_CREDENTIALS_JSON` ga JSON faylning butun matnini qo'ying.
 
 Tizim har o'zgarishdan keyin (ko'pi bilan `SHEETS_SYNC_INTERVAL` soniyada bir marta) jadvalga «Mijozlar», «Yuklar», «Tarix» varaqlarini yangilab yozadi. Asosiy ma'lumot bazada saqlanadi, Sheets — nusxa.
 

@@ -14,9 +14,18 @@ def _int(name: str, default: int) -> int:
         return default
 
 
+def _db_url() -> str:
+    url = os.getenv("DATABASE_URL", "").strip() or f"sqlite+aiosqlite:///{BASE_DIR / 'dragonlife.db'}"
+    # Render / Heroku give "postgres://..." — SQLAlchemy async needs the asyncpg driver
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+asyncpg://" + url[len(prefix):]
+    return url
+
+
 class Settings:
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{BASE_DIR / 'dragonlife.db'}")
+    DATABASE_URL: str = _db_url()
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me-please")
 
     # First admin account (created on first start if no admin exists)
@@ -24,10 +33,15 @@ class Settings:
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
 
     WEB_HOST: str = os.getenv("WEB_HOST", "0.0.0.0")
-    WEB_PORT: int = _int("WEB_PORT", 8000)
+    WEB_PORT: int = _int("PORT", _int("WEB_PORT", 8000))  # Render sets PORT
+
+    # Webhook mode: set on hosts that sleep (Render free). Render fills RENDER_EXTERNAL_URL itself.
+    # Empty → the bot uses long polling.
+    WEBHOOK_BASE: str = (os.getenv("WEBHOOK_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
 
     # Google Sheets backup (optional)
     GOOGLE_CREDENTIALS_FILE: str = os.getenv("GOOGLE_CREDENTIALS_FILE", "")
+    GOOGLE_CREDENTIALS_JSON: str = os.getenv("GOOGLE_CREDENTIALS_JSON", "")  # whole JSON key as text
     GOOGLE_SHEET_ID: str = os.getenv("GOOGLE_SHEET_ID", "")
     SHEETS_SYNC_INTERVAL: int = _int("SHEETS_SYNC_INTERVAL", 60)
 

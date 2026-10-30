@@ -1,5 +1,6 @@
 """Copies the database into Google Sheets (one-way backup, refreshed after every change)."""
 import asyncio
+import json
 import logging
 from pathlib import Path
 
@@ -14,7 +15,7 @@ _dirty = asyncio.Event()
 
 
 def enabled() -> bool:
-    return bool(settings.GOOGLE_CREDENTIALS_FILE and settings.GOOGLE_SHEET_ID)
+    return bool((settings.GOOGLE_CREDENTIALS_FILE or settings.GOOGLE_CREDENTIALS_JSON) and settings.GOOGLE_SHEET_ID)
 
 
 def mark_dirty() -> None:
@@ -59,10 +60,13 @@ async def _collect() -> dict[str, list[list]]:
 def _write(data: dict[str, list[list]]) -> None:
     import gspread
 
-    cred = Path(settings.GOOGLE_CREDENTIALS_FILE)
-    if not cred.is_absolute():
-        cred = BASE_DIR / cred
-    gc = gspread.service_account(filename=str(cred))
+    if settings.GOOGLE_CREDENTIALS_JSON:
+        gc = gspread.service_account_from_dict(json.loads(settings.GOOGLE_CREDENTIALS_JSON))
+    else:
+        cred = Path(settings.GOOGLE_CREDENTIALS_FILE)
+        if not cred.is_absolute():
+            cred = BASE_DIR / cred
+        gc = gspread.service_account(filename=str(cred))
     book = gc.open_by_key(settings.GOOGLE_SHEET_ID)
     existing = {ws.title: ws for ws in book.worksheets()}
     for title, rows in data.items():
@@ -82,7 +86,7 @@ async def sync_now() -> None:
 
 async def sync_loop() -> None:
     if not enabled():
-        log.info("Google Sheets backup is off (GOOGLE_CREDENTIALS_FILE / GOOGLE_SHEET_ID not set)")
+        log.info("Google Sheets backup is off (GOOGLE_SHEET_ID or credentials not set)")
         return
     _dirty.set()  # full copy on start
     while True:

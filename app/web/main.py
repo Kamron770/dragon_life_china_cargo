@@ -122,6 +122,10 @@ def barcode_svg(code: str) -> bytes:
 
 def _routes(app: FastAPI) -> None:
 
+    @app.get("/healthz")
+    async def healthz():
+        return {"ok": True}
+
     @app.get("/lang/{code}")
     async def set_lang(request: Request, code: str):
         request.session["lang"] = code if code in ("uz", "ru") else "uz"
