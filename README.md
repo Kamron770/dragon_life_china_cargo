@@ -122,7 +122,7 @@ Agar `ADMIN_PASSWORD` umuman berilmagan bo'lsa, birinchi ishga tushishda tasodif
 ## Tuzilma
 
 ```
-main.py                 bot + panel + Sheets ni birga ishga tushiradi
+main.py                 bot va panelni birga ishga tushiradi
 app/config.py           sozlamalar, ombor manzili, havolalar
 app/models.py           bazadagi jadvallar
 app/statuses.py         holatlar va rollar huquqlari
