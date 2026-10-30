@@ -9,7 +9,6 @@ from aiogram.types import FSInputFile, KeyboardButton, Message, ReplyKeyboardMar
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from .. import sheets
 from ..db import SessionLocal
 from ..models import Cargo, Client, StatusHistory
 from ..services import get_settings, get_tariffs, normalize_phone, normalize_tracking
@@ -237,7 +236,6 @@ async def reg_phone(m: Message, state: FSMContext):
         client.full_name = data.get("name", m.from_user.full_name)
         client.phone = phone
         await s.commit()
-    sheets.mark_dirty()
 
     await m.answer(t("registered", lang, name=html.escape(client.full_name), a=client.avia_code, f=client.fura_code))
     await show_main(m, state, lang)
@@ -363,7 +361,6 @@ async def cargo_track(m: Message, state: FSMContext):
             await s.commit()
         except IntegrityError:
             return await m.answer(t("track_exists_other", c.lang))
-    sheets.mark_dirty()
     await m.answer(t("track_saved", c.lang, kind=kind_name(kind, c.lang), code=html.escape(code),
                      status=label(WAITING, c.lang)))
 
@@ -388,7 +385,6 @@ async def cargo_request(m: Message, state: FSMContext):
         await s.flush()
         s.add(StatusHistory(cargo_id=cargo.id, status=WAITING, comment="Mijoz trek kodsiz so'rov yubordi"))
         await s.commit()
-    sheets.mark_dirty()
     await m.answer(t("request_sent", c.lang))
     await show_main(m, state, c.lang)
 
@@ -414,7 +410,6 @@ async def set_lang(m: Message, state: FSMContext):
         c = await s.scalar(select(Client).where(Client.telegram_id == m.from_user.id))
         c.lang = lang
         await s.commit()
-    sheets.mark_dirty()
     await m.answer(t("saved", lang))
     await show_settings(m, state, c)
 
@@ -435,7 +430,6 @@ async def set_name(m: Message, state: FSMContext):
             return await m.answer(t("bad_name", c.lang))
         c.full_name = name
         await s.commit()
-    sheets.mark_dirty()
     await m.answer(t("saved", c.lang))
     await show_settings(m, state, c)
 
@@ -457,7 +451,6 @@ async def set_phone(m: Message, state: FSMContext):
             return await m.answer(t("bad_phone", c.lang))
         c.phone = phone
         await s.commit()
-    sheets.mark_dirty()
     await m.answer(t("saved", c.lang))
     await show_settings(m, state, c)
 

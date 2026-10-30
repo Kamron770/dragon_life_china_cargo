@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t('clients') }}{% endblock %}
 {% block heading %}👥 {{ t('clients') }}{% endblock %}
+{% block actions %}{% if op.role == 'admin' %}<a class="btn ghost" href="/admin/export.xlsx">📥 {{ t('export_all') }}</a>{% endif %}{% endblock %}
 {% block content %}
 <div class="card">
   <form class="filters" method="get" action="/clients">

@@ -11,7 +11,6 @@ from aiogram.types import Update
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 
-from app import sheets
 from app.bot.handlers import router
 from app.config import settings
 from app.db import init_db
@@ -92,7 +91,7 @@ async def main() -> None:
 
     server = uvicorn.Server(uvicorn.Config(app, host=settings.WEB_HOST, port=settings.WEB_PORT,
                                            proxy_headers=True, forwarded_allow_ips="*"))
-    tasks = [asyncio.create_task(sheets.sync_loop())]
+    tasks: list[asyncio.Task] = []
     if bot:
         if polling := await start_bot(bot, dp, use_webhook):
             tasks.append(polling)

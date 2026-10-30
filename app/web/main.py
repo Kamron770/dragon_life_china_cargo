@@ -14,7 +14,6 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 from starlette.middleware.sessions import SessionMiddleware
 
-from .. import sheets
 from ..config import settings
 from ..db import DEFAULT_SETTINGS, SessionLocal
 from ..models import Cargo, Client, Operator, Setting, StatusHistory, Tariff, utcnow
@@ -22,6 +21,7 @@ from ..security import hash_password, verify_password
 from ..services import (
     BOT_STATUS, add_history, assign_tracking, get_bot, get_tariffs, normalize_tracking, notify_tracking, parse_client_code, set_status,
 )
+from ..export import cargos_xlsx, full_xlsx
 from ..statuses import AT_CHINA, BADGE, ORDER, ROLES, WAITING, can_set, label, next_status, role_kinds, role_targets
 from ..texts import num, price_line
 from .i18n import tr
@@ -129,6 +129,29 @@ async def bot_info() -> dict:
     return info
 
 
+def cargo_query(op: Operator, q: str, kind: str, status: str):
+    """Cargo list filters shared by the dashboard and the Excel export."""
+    kinds = role_kinds(op.role)
+    base = select(Cargo).join(Client).where(Cargo.kind.in_(kinds))
+    if q.strip():
+        base = base.where(search_filter(q))
+    if kind in kinds:
+        base = base.where(Cargo.kind == kind)
+    if status == "no_tracking":
+        base = base.where(Cargo.tracking_code.is_(None))
+    elif status == "active":
+        base = base.where(Cargo.status.in_(ORDER[:-1]))
+    elif status in ORDER:
+        base = base.where(Cargo.status == status)
+    return base
+
+
+def xlsx_response(data: bytes, name: str) -> Response:
+    filename = f"{name}_{utcnow():%Y-%m-%d_%H-%M}.xlsx"
+    return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
 def barcode_svg(code: str) -> bytes:
     buf = io.BytesIO()
     barcode.get("code128", code, writer=SVGWriter()).write(
@@ -176,17 +199,7 @@ def _routes(app: FastAPI) -> None:
         async with SessionLocal() as s:
             op = await current(request, s)
             kinds = role_kinds(op.role)
-            base = select(Cargo).join(Client).where(Cargo.kind.in_(kinds))
-            if q.strip():
-                base = base.where(search_filter(q))
-            if kind in kinds:
-                base = base.where(Cargo.kind == kind)
-            if status == "no_tracking":
-                base = base.where(Cargo.tracking_code.is_(None))
-            elif status == "active":
-                base = base.where(Cargo.status.in_(ORDER[:-1]))
-            elif status in ORDER:
-                base = base.where(Cargo.status == status)
+            base = cargo_query(op, q, kind, status)
 
             total = await s.scalar(select(func.count()).select_from(base.subquery()))
             pages = max(1, math.ceil(total / PAGE_SIZE))
@@ -205,6 +218,7 @@ def _routes(app: FastAPI) -> None:
         qs = lambda p: "?" + urlencode({"q": q, "kind": kind, "status": status, "page": p})
         return render(request, "dashboard.html", op, cargos=cargos, q=q, kind=kind, status=status, kinds=kinds,
                       counts=counts, no_track=no_track, total=total, page=page, pages=pages, qs=qs,
+                      export_qs=urlencode({"q": q, "kind": kind, "status": status}),
                       targets=role_targets(op.role))
 
     # ----- cargo actions -----
@@ -253,7 +267,6 @@ def _routes(app: FastAPI) -> None:
                 cargo.note = note.strip() or None
                 cargo.updated_at = utcnow()
                 await s.commit()
-                sheets.mark_dirty()
                 flash(request, tr(lang(request), "saved"))
         return back(request)
 
@@ -265,7 +278,6 @@ def _routes(app: FastAPI) -> None:
             if cargo:
                 await s.delete(cargo)
                 await s.commit()
-                sheets.mark_dirty()
                 flash(request, tr(lang(request), "deleted"))
         return RedirectResponse("/", status_code=303)
 
@@ -351,7 +363,6 @@ def _routes(app: FastAPI) -> None:
                 await assign_tracking(s, cargo, op)  # also notifies the client
             else:
                 await notify_tracking(cargo)
-            sheets.mark_dirty()
         flash(request, f"{tr(lg, 'cargo_created')}: {cargo.tracking_code}")
         return RedirectResponse(f"/cargo/{cargo.id}", status_code=303)
 
@@ -438,13 +449,34 @@ def _routes(app: FastAPI) -> None:
                 flash(request, tr(lang(request), "saved"))
         return RedirectResponse("/admin/operators", status_code=303)
 
-    # ----- admin: settings (Google Sheets) -----
+    # ----- Excel export -----
+    @app.get("/export/cargos.xlsx")
+    async def export_cargos(request: Request, q: str = "", kind: str = "", status: str = ""):
+        async with SessionLocal() as s:
+            op = await current(request, s)
+            cargos = (await s.scalars(
+                cargo_query(op, q, kind, status).options(selectinload(Cargo.client)).order_by(Cargo.updated_at.desc())
+            )).all()
+        return xlsx_response(cargos_xlsx(list(cargos), lang(request)), "dragonlife_yuklar")
+
+    @app.get("/admin/export.xlsx")
+    async def export_all(request: Request):
+        async with SessionLocal() as s:
+            await current(request, s, admin=True)
+            clients = (await s.scalars(select(Client).order_by(Client.id))).all()
+            cargos = (await s.scalars(select(Cargo).options(selectinload(Cargo.client)).order_by(Cargo.id))).all()
+            history = (await s.scalars(select(StatusHistory).options(
+                selectinload(StatusHistory.operator), selectinload(StatusHistory.cargo)).order_by(StatusHistory.id))).all()
+            tariffs = await get_tariffs(s, active_only=False)
+        data = full_xlsx(list(clients), list(cargos), list(history), tariffs, lang(request))
+        return xlsx_response(data, "dragonlife_baza")
+
+    # ----- admin: bot status & export -----
     @app.get("/admin/settings")
     async def settings_page(request: Request):
         async with SessionLocal() as s:
             op = await current(request, s, admin=True)
-        return render(request, "settings.html", op, sheets_on=sheets.enabled(), sheet_id=settings.GOOGLE_SHEET_ID,
-                      bot=await bot_info(), robot_email=sheets.service_email(), sheets_status=sheets.STATUS)
+        return render(request, "settings.html", op, bot=await bot_info())
 
     @app.post("/admin/bot/reconnect")
     async def bot_reconnect(request: Request):
@@ -520,7 +552,6 @@ def _routes(app: FastAPI) -> None:
                 data["is_active"] = True
                 s.add(Tariff(kind=kind, **data))
                 await s.commit()
-                sheets.mark_dirty()
                 flash(request, tr(lang(request), "saved"))
         return RedirectResponse("/admin/prices", status_code=303)
 
@@ -537,7 +568,6 @@ def _routes(app: FastAPI) -> None:
                 for k, v in data.items():
                     setattr(tariff, k, v)
                 await s.commit()
-                sheets.mark_dirty()
                 flash(request, tr(lang(request), "saved"))
         return RedirectResponse("/admin/prices", status_code=303)
 
@@ -549,17 +579,5 @@ def _routes(app: FastAPI) -> None:
             if tariff:
                 await s.delete(tariff)
                 await s.commit()
-                sheets.mark_dirty()
                 flash(request, tr(lang(request), "deleted"))
         return RedirectResponse("/admin/prices", status_code=303)
-
-    @app.post("/admin/sync")
-    async def sync(request: Request):
-        async with SessionLocal() as s:
-            await current(request, s, admin=True)
-        try:
-            await sheets.sync_now()
-            flash(request, tr(lang(request), "synced"))
-        except Exception as e:
-            flash(request, f"Google Sheets: {sheets.STATUS.get('error') or e}", "error")
-        return RedirectResponse("/admin/settings", status_code=303)

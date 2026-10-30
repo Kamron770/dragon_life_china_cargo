@@ -4,7 +4,7 @@ Xitoy → O'zbekiston kargo xizmati uchun tizim:
 
 1. **Telegram bot** (o'zbek / rus) — mijozlar uchun.
 2. **Veb-panel** — administrator va operatorlar uchun (login/parol bilan).
-3. **Ma'lumotlar bazasi** (SQLite yoki PostgreSQL) + **Google Sheets** ga avtomatik nusxa.
+3. **Ma'lumotlar bazasi** (SQLite yoki PostgreSQL) + **Excel** ga yuklab olish.
 
 Hammasi bitta `python main.py` buyrug'i bilan ishga tushadi.
 
@@ -39,7 +39,6 @@ Administrator istalgan holatni qo'ya oladi.
 ## Veb-panel
 
 Rollar:
-- **Administrator** — hamma narsa + operatorlarni qo'shish, narx/muddatlarni o'zgartirish, Google Sheets.
 - **Xitoy operatori (AVIA)** — faqat AVIA yuklarini ko'radi, 1–3 holatlarni qo'yadi.
 - **Xitoy operatori (FURA)** — faqat FURA yuklarini ko'radi, 1–3 holatlarni qo'yadi.
 - **O'zbekiston operatori** — barcha yuklar, 4–5 holatlarni qo'yadi.
@@ -51,7 +50,6 @@ Sahifalar:
 - **Mijozlar** — ro'yxat va har bir mijozning yuklari.
 - **Operatorlar** — login/parol va rollar.
 - **💰 Narxlar va muddatlar** — AVIA va FURA uchun narxlar ro'yxati: administrator narx qatorlarini qo'shadi, o'zgartiradi, o'chiradi yoki vaqtincha yashiradi (narx, valyuta, birlik: 1 kg / 1 m³ / 1 dona, minimal miqdor, o'zbekcha/ruscha nomi). Muddatlar ham shu yerda. Pastda «Botda shunday ko'rinadi» namunasi bor, o'zgarish botda darhol ko'rinadi.
-- **📊 Google Sheets** — jadvalni ochish va qo'lda nusxalash.
 
 Panel o'zbek va rus tillarida (pastki chap burchakda UZ / RU).
 
@@ -91,14 +89,12 @@ Repoda tayyor `render.yaml` bor — Render hamma narsani (server + PostgreSQL ba
 4. Render quyidagilarni so'raydi:
    - `BOT_TOKEN` — 1-qadamdagi token;
    - `ADMIN_PASSWORD` — panelga kirish uchun kuchli parol;
-   - `GOOGLE_SHEET_ID`, `GOOGLE_CREDENTIALS_JSON` — hozircha bo'sh qoldirsa bo'ladi (pastga qarang).
 5. **Apply** ni bosing. 3–5 daqiqada tayyor bo'ladi.
 
 **3. Tekshiring**
 - Panel manzili Render'da ko'rinadi, masalan `https://dragonlife-cargo.onrender.com` → login `admin` + siz bergan parol.
 - Telegram'da botingizni oching → `/start`. Bot webhook rejimida avtomatik ulanadi, qo'shimcha sozlash kerak emas.
 
-**Google Sheets'ni keyin ulash:** Render → servis → **Environment** → `GOOGLE_SHEET_ID` va `GOOGLE_CREDENTIALS_JSON` (service account JSON faylining **butun matni**) ni kiriting → **Save** (servis qayta ishga tushadi).
 
 ### 🔑 Admin parolini tiklash
 
@@ -118,20 +114,10 @@ Agar `ADMIN_PASSWORD` umuman berilmagan bo'lsa, birinchi ishga tushishda tasodif
 
 **Haqiqiy ish uchun** (mijozlar bilan) pullik tarifga o'ting: Render'da web servisni **Starter** ga, bazani pullik **PostgreSQL** ga o'zgartiring — `render.yaml` dagi `plan: free` qatorlarini almashtirish kifoya. Shunda server uxlamaydi va baza doimiy saqlanadi.
 
-### Google Sheets ulash
+### 📥 Excel'ga yuklab olish
 
-1. [console.cloud.google.com](https://console.cloud.google.com) → yangi loyiha (`dragonlife`).
-2. **APIs & Services → Library**: **Google Sheets API** va **Google Drive API** → **Enable**.
-3. **IAM & Admin → Service Accounts → Create service account** (`dragonlife-sheets`) → **Done**.
-4. Service account → **Keys → Add key → Create new key → JSON** — fayl yuklab olinadi. Uni hech kimga bermang.
-5. [sheets.google.com](https://sheets.google.com) → yangi jadval → **Share** → JSON fayldagi `client_email` ni **Editor** sifatida qo'shing.
-6. Render → **Environment**:
-   - `GOOGLE_SHEET_ID` — jadval havolasi (to'liq URL yoki faqat ID);
-   - `GOOGLE_CREDENTIALS_JSON` — JSON faylning **butun matni**.
-   Mahalliy ishga tushirishda buning o'rniga faylni `google-credentials.json` deb qo'yish ham mumkin.
-7. Panel → **⚙️ Bot va Google Sheets**: robot email, oxirgi nusxa vaqti va xatolar ko'rinadi; **Hozir nusxalash** tugmasi bor.
-
-Tizim har o'zgarishdan keyin (ko'pi bilan `SHEETS_SYNC_INTERVAL` soniyada bir marta) «Mijozlar», «Yuklar», «Tarix», «Narxlar» varaqlarini yangilaydi. Asosiy ma'lumot bazada, Sheets — nusxa (jadvalda qo'lda o'zgartirilgan narsa keyingi nusxada qayta yoziladi).
+- **Yuklar** sahifasi → kerakli filtrlarni tanlang → **📥 Excel** — ekrandagi ro'yxat (filtr bilan) `.xlsx` bo'lib yuklanadi. Har bir operator faqat o'ziga ruxsat berilgan yuklarni oladi.
+- **⚙️ Bot va eksport** (yoki **Mijozlar**) → **Butun bazani yuklab olish** — faqat administrator uchun: «Mijozlar», «Yuklar», «Tarix», «Narxlar» varaqlari bitta faylda.
 
 ## Tuzilma
 
@@ -142,7 +128,6 @@ app/models.py           bazadagi jadvallar
 app/statuses.py         holatlar va rollar huquqlari
 app/texts.py            bot matnlari (uz/ru)
 app/services.py         umumiy logika (trek kod yaratish, holat, xabarnomalar)
-app/sheets.py           Google Sheets nusxasi
 app/bot/handlers.py     Telegram bot
 app/web/                veb-panel (FastAPI + shablonlar)
 ```

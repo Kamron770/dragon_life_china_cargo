@@ -23,10 +23,6 @@ services:
         fromDatabase:
           name: dragonlife-db
           property: connectionString
-      - key: GOOGLE_SHEET_ID
-        sync: false            # optional
-      - key: GOOGLE_CREDENTIALS_JSON
-        sync: false            # optional: paste the whole service account JSON
 
 databases:
   - name: dragonlife-db

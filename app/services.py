@@ -8,7 +8,6 @@ from aiogram import Bot
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from . import sheets
 from .models import Cargo, Client, Operator, Setting, StatusHistory, Tariff, utcnow
 from .statuses import label
 from .texts import kind_name, t
@@ -89,7 +88,6 @@ async def set_status(s: AsyncSession, cargo: Cargo, status: str, operator: Opera
     cargo.updated_at = utcnow()
     await add_history(s, cargo, status, operator)
     await s.commit()
-    sheets.mark_dirty()
     await notify_status(cargo)
     return True
 
@@ -100,7 +98,6 @@ async def assign_tracking(s: AsyncSession, cargo: Cargo, operator: Operator | No
     cargo.updated_at = utcnow()
     await add_history(s, cargo, cargo.status, operator, comment=f"Trek kod yaratildi: {cargo.tracking_code}")
     await s.commit()
-    sheets.mark_dirty()
     await notify_tracking(cargo)
     return cargo.tracking_code
 
