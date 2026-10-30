@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode
 
 from dotenv import load_dotenv
 
@@ -14,18 +15,28 @@ def _int(name: str, default: int) -> int:
         return default
 
 
-def _db_url() -> str:
+def _db_url() -> tuple[str, dict]:
+    """Returns (SQLAlchemy URL, connect_args). Accepts URLs as Render / Neon / Supabase give them."""
     url = os.getenv("DATABASE_URL", "").strip() or f"sqlite+aiosqlite:///{BASE_DIR / 'dragonlife.db'}"
-    # Render / Heroku give "postgres://..." — SQLAlchemy async needs the asyncpg driver
-    for prefix in ("postgres://", "postgresql://"):
+    for prefix in ("postgres://", "postgresql://"):  # SQLAlchemy async needs the asyncpg driver
         if url.startswith(prefix):
-            return "postgresql+asyncpg://" + url[len(prefix):]
-    return url
+            url = "postgresql+asyncpg://" + url[len(prefix):]
+    connect_args: dict = {}
+    if url.startswith("postgresql+asyncpg://") and "?" in url:
+        # asyncpg does not understand libpq options like ?sslmode=require&channel_binding=require
+        base, query = url.split("?", 1)
+        params = dict(parse_qsl(query))
+        sslmode = params.pop("sslmode", None)
+        params.pop("channel_binding", None)
+        if sslmode and sslmode != "disable":
+            connect_args["ssl"] = "require"
+        url = base + ("?" + urlencode(params) if params else "")
+    return url, connect_args
 
 
 class Settings:
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-    DATABASE_URL: str = _db_url()
+    DATABASE_URL, DB_CONNECT_ARGS = _db_url()
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me-please")
 
     # First admin account (created on first start if no admin exists)

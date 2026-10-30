@@ -9,7 +9,7 @@ from .security import hash_password
 
 log = logging.getLogger(__name__)
 
-engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
+engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True, connect_args=settings.DB_CONNECT_ARGS)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 # Delivery times, editable from the admin panel → "Narxlar va muddatlar"
