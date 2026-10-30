@@ -1,5 +1,4 @@
-# Render Blueprint: web service (bot + panel).
-# The database is external (e.g. free Neon.tech PostgreSQL): paste its URL into DATABASE_URL.
+# Render Blueprint: web service (bot + panel) + PostgreSQL.
 # Render → New → Blueprint → choose this repository.
 services:
   - type: web
@@ -21,9 +20,16 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false            # PostgreSQL URL, e.g. from neon.tech
+        fromDatabase:
+          name: dragonlife-db
+          property: connectionString
       - key: GOOGLE_SHEET_ID
         sync: false            # optional
       - key: GOOGLE_CREDENTIALS_JSON
         sync: false            # optional: paste the whole service account JSON
 
+databases:
+  - name: dragonlife-db
+    plan: free
+    databaseName: dragonlife
+    user: dragonlife

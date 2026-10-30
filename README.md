@@ -77,36 +77,36 @@ docker compose up -d --build
 
 ## 🚀 Render'da ishga tushirish (sinov uchun)
 
-Bot va panel Render'da ishlaydi, baza esa **Neon.tech** da (bepul, muddati tugamaydi).
+Repoda tayyor `render.yaml` bor — Render hamma narsani (server + PostgreSQL bazasi) o'zi yaratadi.
 
-**1. Bot tokeni** — [@BotFather](https://t.me/BotFather) → `/newbot` → tokenni saqlang. **Uni hech kimga bermang.**
+**1. Bot tokenini oling**
+1. Telegram'da [@BotFather](https://t.me/BotFather) ni oching → `/newbot`.
+2. Bot nomini (masalan `Dragon Life Cargo`) va username'ini (masalan `dragonlife_cargo_bot`) yozing.
+3. BotFather bergan tokenni (`123456789:AA...`) saqlab qo'ying. **Uni hech kimga bermang.**
 
-**2. Baza (Neon)**
-1. [neon.tech](https://neon.tech) → **Sign up** (Google yoki GitHub bilan).
-2. Yangi loyiha: nomi `dragonlife`, **Region** — Yevropa (masalan *Frankfurt*).
-3. Loyiha ochilgach **Connect** tugmasi → ulanish manzilini nusxalang. U shunday ko'rinadi:
-   `postgresql://neondb_owner:...@ep-...neon.tech/neondb?sslmode=require`
+**2. Render'da joylashtiring**
+1. [render.com](https://render.com) da GitHub orqali ro'yxatdan o'ting.
+2. **New → Blueprint** → `dragon_life_china_cargo` repozitoriyasini tanlang (kerak bo'lsa Render'ga GitHub ruxsatini bering).
+3. Branch: kod qaysi branchda bo'lsa o'shani tanlang (`main` ga birlashtirilgan bo'lsa — `main`).
+4. Render quyidagilarni so'raydi:
+   - `BOT_TOKEN` — 1-qadamdagi token;
+   - `ADMIN_PASSWORD` — panelga kirish uchun kuchli parol;
+   - `GOOGLE_SHEET_ID`, `GOOGLE_CREDENTIALS_JSON` — hozircha bo'sh qoldirsa bo'ladi (pastga qarang).
+5. **Apply** ni bosing. 3–5 daqiqada tayyor bo'ladi.
 
-**3. Render**
-1. [render.com](https://render.com) → GitHub bilan kiring.
-2. **New → Blueprint** → `dragon_life_china_cargo` → **Connect**.
-3. Maydonlarni to'ldiring:
-   - `BOT_TOKEN` — bot tokeni;
-   - `ADMIN_PASSWORD` — panel paroli;
-   - `DATABASE_URL` — Neon'dan nusxalangan manzil;
-   - `GOOGLE_SHEET_ID`, `GOOGLE_CREDENTIALS_JSON` — hozircha bo'sh.
-4. **Apply** → 3–5 daqiqa kuting, servis **Live** bo'ladi.
+**3. Tekshiring**
+- Panel manzili Render'da ko'rinadi, masalan `https://dragonlife-cargo.onrender.com` → login `admin` + siz bergan parol.
+- Telegram'da botingizni oching → `/start`. Bot webhook rejimida avtomatik ulanadi, qo'shimcha sozlash kerak emas.
 
-**4. Tekshirish**
-- Panel: Render ko'rsatgan manzil (masalan `https://dragonlife-cargo.onrender.com`) → login `admin` + parolingiz.
-- Telegram'da botga `/start`. Bot webhook rejimida o'zi ulanadi.
+**Google Sheets'ni keyin ulash:** Render → servis → **Environment** → `GOOGLE_SHEET_ID` va `GOOGLE_CREDENTIALS_JSON` (service account JSON faylining **butun matni**) ni kiriting → **Save** (servis qayta ishga tushadi).
 
 ### Bepul tarifdagi cheklovlar
 
-- Render serveri 15 daqiqa ishlatilmasa **uxlaydi**; keyingi xabarda ~1 daqiqada uyg'onadi. Ma'lumotlar yo'qolmaydi.
-- Uyg'onganda bot foydalanuvchi qaysi qadamda turganini unutadi — mijoz menyudan qaytadan tanlaydi. Ro'yxatdan o'tish va yuklar bazada saqlanadi.
+- Server 15 daqiqa ishlatilmasa **uxlaydi**. Keyingi xabar yoki panelga kirishda ~1 daqiqada uyg'onadi — shu sababli birinchi javob kechikadi. Ma'lumotlar yo'qolmaydi.
+- Uyg'onganda bot foydalanuvchi qaysi qadamda turganini unutadi (masalan, trek kod kiritish oynasi) — mijoz menyudan qaytadan tanlaydi. Ro'yxatdan o'tish va yuklar bazada saqlanib qoladi.
+- Bepul PostgreSQL bazasining **muddati cheklangan** (Render shartlarini tekshiring) — muddat tugasa ma'lumotlar o'chadi.
 
-**Haqiqiy ish uchun** Render'dagi servisni **Starter** tarifiga o'tkazing (`render.yaml` da `plan: free` → `plan: starter`) — server uxlamaydi.
+**Haqiqiy ish uchun** (mijozlar bilan) pullik tarifga o'ting: Render'da web servisni **Starter** ga, bazani pullik **PostgreSQL** ga o'zgartiring — `render.yaml` dagi `plan: free` qatorlarini almashtirish kifoya. Shunda server uxlamaydi va baza doimiy saqlanadi.
 
 ### Google Sheets ulash
 
