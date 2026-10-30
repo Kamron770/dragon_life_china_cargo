@@ -100,6 +100,16 @@ Repoda tayyor `render.yaml` bor — Render hamma narsani (server + PostgreSQL ba
 
 **Google Sheets'ni keyin ulash:** Render → servis → **Environment** → `GOOGLE_SHEET_ID` va `GOOGLE_CREDENTIALS_JSON` (service account JSON faylining **butun matni**) ni kiriting → **Save** (servis qayta ishga tushadi).
 
+### 🔑 Admin parolini tiklash
+
+1. Render → **dragonlife-cargo** → **Environment**.
+2. `ADMIN_PASSWORD` ga yangi parol yozing.
+3. **Add Environment Variable** → Key: `ADMIN_RESET`, Value: `1` → **Save** (servis qayta ishga tushadi).
+4. Panelga `admin` + yangi parol bilan kiring.
+5. **Muhim:** `ADMIN_RESET` ni o'chirib, yana **Save** bosing (aks holda har qayta ishga tushishda parol shu qiymatga qaytariladi).
+
+Agar `ADMIN_PASSWORD` umuman berilmagan bo'lsa, birinchi ishga tushishda tasodifiy parol yaratiladi va **Logs** da `Generated admin password: ...` qatorida ko'rinadi.
+
 ### Bepul tarifdagi cheklovlar
 
 - Server 15 daqiqa ishlatilmasa **uxlaydi**. Keyingi xabar yoki panelga kirishda ~1 daqiqada uyg'onadi — shu sababli birinchi javob kechikadi. Ma'lumotlar yo'qolmaydi.

@@ -1,4 +1,5 @@
 import logging
+import secrets
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -21,20 +22,38 @@ DEFAULT_SETTINGS = {
 }
 
 
+async def _ensure_admin(s: AsyncSession) -> None:
+    """Creates the first admin, or resets its password when ADMIN_RESET is set."""
+    has_admin = await s.scalar(select(Operator).where(Operator.role == "admin").limit(1))
+    if has_admin and not settings.ADMIN_RESET:
+        return
+    password = settings.ADMIN_PASSWORD
+    if not password:
+        if has_admin:
+            log.error("ADMIN_RESET is set but ADMIN_PASSWORD is empty — nothing changed")
+            return
+        password = secrets.token_urlsafe(9)
+        log.warning("ADMIN_PASSWORD is not set. Generated admin password: %s", password)
+
+    op = await s.scalar(select(Operator).where(Operator.username == settings.ADMIN_USERNAME))
+    if not op:
+        op = Operator(username=settings.ADMIN_USERNAME, full_name="Administrator")
+        s.add(op)
+    op.password_hash = hash_password(password)
+    op.role = "admin"
+    op.is_active = True
+    if has_admin:
+        log.warning("Admin password was reset for '%s'. Remove ADMIN_RESET now.", settings.ADMIN_USERNAME)
+    else:
+        log.warning("Admin account created: %s", settings.ADMIN_USERNAME)
+
+
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     async with SessionLocal() as s:
-        has_admin = await s.scalar(select(Operator).where(Operator.role == "admin").limit(1))
-        if not has_admin:
-            s.add(Operator(
-                username=settings.ADMIN_USERNAME,
-                password_hash=hash_password(settings.ADMIN_PASSWORD),
-                full_name="Administrator",
-                role="admin",
-            ))
-            log.warning("Admin account created: %s (change the password!)", settings.ADMIN_USERNAME)
+        await _ensure_admin(s)
         old = {r.key: r for r in (await s.scalars(select(Setting))).all()}
         for key, value in DEFAULT_SETTINGS.items():
             if key not in old:

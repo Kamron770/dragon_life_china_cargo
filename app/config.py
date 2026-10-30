@@ -40,8 +40,10 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me-please")
 
     # First admin account (created on first start if no admin exists)
-    ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
-    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
+    ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin").strip() or "admin"
+    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "").strip()
+    # Set ADMIN_RESET=1 and restart → admin password becomes ADMIN_PASSWORD again. Remove it afterwards.
+    ADMIN_RESET: bool = os.getenv("ADMIN_RESET", "").strip().lower() in ("1", "true", "yes", "ha")
 
     WEB_HOST: str = os.getenv("WEB_HOST", "0.0.0.0")
     WEB_PORT: int = _int("PORT", _int("WEB_PORT", 8000))  # Render sets PORT
