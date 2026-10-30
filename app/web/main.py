@@ -1,3 +1,4 @@
+import asyncio
 import io
 import math
 from pathlib import Path
@@ -19,7 +20,7 @@ from ..db import DEFAULT_SETTINGS, SessionLocal
 from ..models import Cargo, Client, Operator, Setting, StatusHistory, Tariff, utcnow
 from ..security import hash_password, verify_password
 from ..services import (
-    add_history, assign_tracking, get_tariffs, normalize_tracking, notify_tracking, parse_client_code, set_status,
+    BOT_STATUS, add_history, assign_tracking, get_bot, get_tariffs, normalize_tracking, notify_tracking, parse_client_code, set_status,
 )
 from ..statuses import AT_CHINA, BADGE, ORDER, ROLES, WAITING, can_set, label, next_status, role_kinds, role_targets
 from ..texts import num, price_line
@@ -108,6 +109,24 @@ def search_filter(q: str):
     elif q.isdigit():
         conds.append(Client.id == int(q))
     return or_(*conds)
+
+
+async def bot_info() -> dict:
+    """What the admin sees in the "Bot holati" block."""
+    info = {"token": BOT_STATUS["token"], "mode": BOT_STATUS["mode"], "error": BOT_STATUS["error"],
+            "username": None, "hook_url": None, "pending": None, "last_error": None, "last_error_at": None}
+    bot = get_bot()
+    if not bot:
+        return info
+    try:
+        me = await asyncio.wait_for(bot.get_me(), 10)
+        info["username"] = me.username
+        hook = await asyncio.wait_for(bot.get_webhook_info(), 10)
+        info.update(hook_url=hook.url or None, pending=hook.pending_update_count,
+                    last_error=hook.last_error_message, last_error_at=hook.last_error_date)
+    except Exception as e:
+        info["error"] = f"{type(e).__name__}: {e}"
+    return info
 
 
 def barcode_svg(code: str) -> bytes:
@@ -424,7 +443,24 @@ def _routes(app: FastAPI) -> None:
     async def settings_page(request: Request):
         async with SessionLocal() as s:
             op = await current(request, s, admin=True)
-        return render(request, "settings.html", op, sheets_on=sheets.enabled(), sheet_id=settings.GOOGLE_SHEET_ID)
+        return render(request, "settings.html", op, sheets_on=sheets.enabled(), sheet_id=settings.GOOGLE_SHEET_ID,
+                      bot=await bot_info())
+
+    @app.post("/admin/bot/reconnect")
+    async def bot_reconnect(request: Request):
+        async with SessionLocal() as s:
+            await current(request, s, admin=True)
+        bot = get_bot()
+        try:
+            if not bot or BOT_STATUS.get("mode") != "webhook":
+                raise RuntimeError("bot / webhook is off")
+            await bot.set_webhook(BOT_STATUS["webhook_url"], secret_token=BOT_STATUS["secret"],
+                                  allowed_updates=BOT_STATUS.get("allowed_updates"), drop_pending_updates=True)
+            BOT_STATUS["error"] = None
+            flash(request, tr(lang(request), "saved"))
+        except Exception as e:
+            flash(request, f"{type(e).__name__}: {e}", "error")
+        return RedirectResponse("/admin/settings", status_code=303)
 
     # ----- admin: prices & delivery times -----
     @app.get("/admin/prices")

@@ -35,7 +35,7 @@ def _db_url() -> tuple[str, dict]:
 
 
 class Settings:
-    BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
+    BOT_TOKEN: str = "".join(os.getenv("BOT_TOKEN", "").split())  # drop spaces/newlines from pasting
     DATABASE_URL, DB_CONNECT_ARGS = _db_url()
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me-please")
 

@@ -16,6 +16,8 @@ from .texts import kind_name, t
 log = logging.getLogger(__name__)
 
 _bot: Bot | None = None
+# Filled in main.py, shown on the admin "Bot holati" block
+BOT_STATUS: dict = {"token": False, "mode": None, "error": None, "webhook_url": None}
 
 TRACK_RE = re.compile(r"^[A-Z0-9\-]{5,40}$")
 CLIENT_CODE_RE = re.compile(r"^([AF])0*(\d+)$")
@@ -24,6 +26,10 @@ CLIENT_CODE_RE = re.compile(r"^([AF])0*(\d+)$")
 def set_bot(bot: Bot | None) -> None:
     global _bot
     _bot = bot
+
+
+def get_bot() -> Bot | None:
+    return _bot
 
 
 def normalize_tracking(raw: str) -> str | None:

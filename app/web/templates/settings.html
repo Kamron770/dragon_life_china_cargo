@@ -1,8 +1,27 @@
 {% extends "base.html" %}
-{% block title %}{{ t('sheets') }}{% endblock %}
-{% block heading %}📊 {{ t('sheets') }}{% endblock %}
+{% block title %}{{ t('settings') }}{% endblock %}
+{% block heading %}⚙️ {{ t('settings') }}{% endblock %}
 {% block content %}
 <div class="card">
+  <h2>🤖 {{ t('bot_status') }}</h2>
+  {% set ok = bot.username and not bot.error and (bot.mode == 'polling' or bot.hook_url) %}
+  <div class="flash {{ '' if ok else 'error' }}">{{ ('✅ ' ~ t('bot_ok')) if ok else ('⚠️ ' ~ t('bot_off')) }}</div>
+  <div class="kv">
+    <div>Bot</div><div>{% if bot.username %}<a href="https://t.me/{{ bot.username }}" target="_blank">@{{ bot.username }}</a>{% else %}—{% endif %}</div>
+    <div>BOT_TOKEN</div><div>{{ '✅' if bot.token else '❌ ' ~ t('no_token') }}</div>
+    <div>{{ t('mode') }}</div><div>{{ bot.mode or '—' }}</div>
+    <div>Webhook</div><div class="mono" style="word-break:break-all">{{ bot.hook_url or '—' }}</div>
+    <div>{{ t('pending') }}</div><div>{{ bot.pending if bot.pending is not none else '—' }}</div>
+    {% if bot.error %}<div>Xato / Ошибка</div><div style="color:#b91c1c;word-break:break-all">{{ bot.error }}</div>{% endif %}
+    {% if bot.last_error %}<div>{{ t('tg_error') }}</div><div style="color:#b91c1c;word-break:break-all">{{ bot.last_error }}{% if bot.last_error_at %} <span class="muted">({{ bot.last_error_at.strftime('%d.%m %H:%M') }} UTC)</span>{% endif %}</div>{% endif %}
+  </div>
+  {% if bot.mode == 'webhook' %}
+  <form method="post" action="/admin/bot/reconnect" style="margin-top:14px"><button class="btn ghost">🔄 {{ t('reconnect') }}</button></form>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>📊 {{ t('sheets') }}</h2>
   {% if sheets_on %}
     <p><a href="https://docs.google.com/spreadsheets/d/{{ sheet_id }}" target="_blank">{{ t('open') }} ↗</a></p>
     <form method="post" action="/admin/sync"><button class="btn ghost">🔄 {{ t('sync_now') }}</button></form>
