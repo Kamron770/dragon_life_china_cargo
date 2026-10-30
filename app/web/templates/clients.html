@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ t('clients') }}{% endblock %}
+{% block heading %}👥 {{ t('clients') }}{% endblock %}
+{% block content %}
+<div class="card">
+  <form class="filters" method="get" action="/clients">
+    <input name="q" value="{{ q }}" placeholder="🔎 A001 / F001, {{ t('full_name') }}, {{ t('phone') }}">
+    <button class="btn">{{ t('filter') }}</button>
+    <a class="btn ghost" href="/clients">{{ t('reset') }}</a>
+  </form>
+</div>
+<div class="card">
+  <div class="muted" style="margin-bottom:8px">{{ t('total') }}: <b>{{ total }}</b></div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>AVIA</th><th>FURA</th><th>{{ t('full_name') }}</th><th>{{ t('phone') }}</th><th>Telegram</th><th>{{ t('cargos') }}</th><th>{{ t('registered') }}</th></tr></thead>
+    <tbody>
+    {% for c in clients %}
+      <tr onclick="location.href='/clients/{{ c.id }}'" style="cursor:pointer">
+        <td class="mono">{{ c.avia_code }}</td><td class="mono">{{ c.fura_code }}</td>
+        <td>{{ c.full_name }}</td><td>{{ c.phone }}</td>
+        <td class="muted">{{ '@' ~ c.username if c.username else '' }}</td>
+        <td>{{ counts.get(c.id, 0) }}</td>
+        <td class="muted">{{ c.created_at.strftime('%d.%m.%Y') }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted" style="text-align:center;padding:30px">{{ t('empty') }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if pages > 1 %}
+  <div class="pager">
+    {% if page > 1 %}<a class="btn ghost sm" href="{{ qs(page-1) }}">←</a>{% endif %}
+    <span class="muted" style="padding:5px">{{ page }} / {{ pages }}</span>
+    {% if page < pages %}<a class="btn ghost sm" href="{{ qs(page+1) }}">→</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

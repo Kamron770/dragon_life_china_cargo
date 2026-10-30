@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ t('panel') }}{% endblock %} — Dragon Life Cargo</title>
+<link rel="icon" href="/static/favicon.png">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="side" id="side">
+    <div class="brand">
+      <img src="/static/logo.jpg" alt="">
+      <div><b>DRAGON LIFE</b><small>CARGO 🇨🇳 → 🇺🇿</small></div>
+    </div>
+    {% set path = request.url.path %}
+    <nav class="nav">
+      <a href="/" class="{{ 'on' if path == '/' or path.startswith('/cargo/') }}">📦 {{ t('dashboard') }}</a>
+      <a href="/scan" class="{{ 'on' if path == '/scan' }}">📷 {{ t('scan') }}</a>
+      <a href="/cargo-new" class="{{ 'on' if path == '/cargo-new' }}">➕ {{ t('new_cargo') }}</a>
+      <a href="/clients" class="{{ 'on' if path.startswith('/clients') }}">👥 {{ t('clients') }}</a>
+      {% if op.role == 'admin' %}
+      <a href="/admin/operators" class="{{ 'on' if path == '/admin/operators' }}">🛡 {{ t('operators') }}</a>
+      <a href="/admin/settings" class="{{ 'on' if path == '/admin/settings' }}">⚙️ {{ t('settings') }}</a>
+      {% endif %}
+    </nav>
+    <div class="side-foot">
+      <div><b>{{ op.full_name or op.username }}</b></div>
+      <div>{{ role_name(op.role) }}</div>
+      <div style="margin-top:8px;display:flex;gap:6px;align-items:center" class="langs">
+        <a href="/lang/uz" class="{{ 'on' if lang == 'uz' }}">UZ</a>
+        <a href="/lang/ru" class="{{ 'on' if lang == 'ru' }}">RU</a>
+        <span style="flex:1"></span>
+        <a href="/logout">{{ t('logout') }} ↩</a>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="top">
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn ghost sm menu-btn" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
+        <h1>{% block heading %}{% endblock %}</h1>
+      </div>
+      <div>{% block actions %}{% endblock %}</div>
+    </div>
+    {% for kind, msg in flashes %}<div class="flash {{ kind }}">{{ msg }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

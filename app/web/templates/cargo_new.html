@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ t('new_cargo') }}{% endblock %}
+{% block heading %}➕ {{ t('new_cargo') }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:560px">
+  <form method="post" action="/cargo-new" class="form">
+    <label>{{ t('client_code') }} *</label>
+    <input name="client_code" value="{{ client_code }}" placeholder="A001" required autofocus style="font-size:18px" class="mono">
+    <div class="muted" style="font-size:12px;margin-top:4px">{{ t('client_code_hint') }}</div>
+    <label>{{ t('tracking_optional') }}</label>
+    <input name="tracking" value="{{ tracking }}" class="mono">
+    <label>{{ t('initial_status') }}</label>
+    <select name="status">
+      {% for st in statuses %}<option value="{{ st }}" {{ 'selected' if st == default_status }}>{{ label(st) }}</option>{% endfor %}
+    </select>
+    <label>{{ t('weight') }}</label>
+    <input name="weight_kg" inputmode="decimal">
+    <label>{{ t('note') }}</label>
+    <textarea name="note" rows="2"></textarea>
+    <button class="btn big" style="margin-top:16px">{{ t('save') }}</button>
+  </form>
+</div>
+{% endblock %}

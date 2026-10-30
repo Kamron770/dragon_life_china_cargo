@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ t('operators') }}{% endblock %}
+{% block heading %}🛡 {{ t('operators') }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>{{ t('add_operator') }}</h2>
+  <form method="post" action="/admin/operators" class="filters">
+    <input name="username" placeholder="{{ t('username') }} *" required>
+    <input name="password" placeholder="{{ t('password') }} *" required minlength="4">
+    <input name="full_name" placeholder="{{ t('full_name') }}">
+    <select name="role" required>
+      {% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if r == 'china_avia' }}>{{ role_name(r) }}</option>{% endfor %}
+    </select>
+    <button class="btn">➕ {{ t('save') }}</button>
+  </form>
+</div>
+<div class="card">
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>{{ t('username') }}</th><th>{{ t('full_name') }}</th><th>{{ t('role') }}</th><th>{{ t('new_password') }}</th><th>{{ t('is_active') }}</th><th></th></tr></thead>
+    <tbody>
+    {% for o in operators %}
+      <tr>
+        <td class="mono">{{ o.username }}{% if o.id == op.id %} <span class="muted">({{ t('you') }})</span>{% endif %}</td>
+        <td><input form="op{{ o.id }}" name="full_name" value="{{ o.full_name }}"></td>
+        <td><select form="op{{ o.id }}" name="role" {{ 'disabled' if o.id == op.id }}>
+          {% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if r == o.role }}>{{ role_name(r) }}</option>{% endfor %}
+        </select></td>
+        <td><input form="op{{ o.id }}" name="password" type="password" autocomplete="new-password" placeholder="••••"></td>
+        <td><input form="op{{ o.id }}" type="checkbox" name="is_active" value="1" {{ 'checked' if o.is_active }} {{ 'disabled' if o.id == op.id }}></td>
+        <td><form id="op{{ o.id }}" method="post" action="/admin/operators/{{ o.id }}"><button class="btn sm">{{ t('save') }}</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

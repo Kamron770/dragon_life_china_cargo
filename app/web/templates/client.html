@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ client.full_name }}{% endblock %}
+{% block heading %}👤 {{ client.full_name }}{% endblock %}
+{% block actions %}<a class="btn ghost" href="/clients">← {{ t('clients') }}</a>{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="kv">
+    <div>AVIA</div><div class="mono">{{ client.avia_code }}</div>
+    <div>FURA</div><div class="mono">{{ client.fura_code }}</div>
+    <div>{{ t('phone') }}</div><div>{{ client.phone }}</div>
+    <div>Telegram</div><div>{{ '@' ~ client.username if client.username else '—' }} <span class="muted">(ID {{ client.telegram_id }})</span></div>
+    <div>{{ t('registered') }}</div><div>{{ client.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+  </div>
+</div>
+<div class="card">
+  <h2>{{ t('cargos') }} ({{ cargos|length }})</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>{{ t('type') }}</th><th>{{ t('tracking') }}</th><th>{{ t('status') }}</th><th>{{ t('updated') }}</th><th>{{ t('actions') }}</th></tr></thead>
+    <tbody>
+    {% for c in cargos %}
+      <tr>
+        <td><span class="kind {{ c.kind }}">{{ c.kind }}</span></td>
+        <td class="mono">{{ c.tracking_code or '—' }}</td>
+        <td><span class="badge {{ BADGE[c.status] }}">{{ label(c.status) }}</span></td>
+        <td class="muted">{{ c.updated_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td>{% include "_cargo_row_actions.html" %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted" style="text-align:center;padding:30px">{{ t('empty') }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

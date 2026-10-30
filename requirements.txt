@@ -1,0 +1,13 @@
+aiogram>=3.13,<4
+fastapi>=0.110
+uvicorn>=0.29
+SQLAlchemy[asyncio]>=2.0
+aiosqlite>=0.20
+asyncpg>=0.29
+Jinja2>=3.1
+python-multipart>=0.0.9
+itsdangerous>=2.1
+python-barcode>=0.15
+gspread>=6.0
+google-auth>=2.0
+python-dotenv>=1.0

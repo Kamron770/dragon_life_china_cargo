@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ t('scan') }}{% endblock %}
+{% block heading %}📷 {{ t('scan') }}{% endblock %}
+{% block content %}
+<div class="card">
+  <form method="get" action="/scan" class="scanbox" id="scanform">
+    <input name="code" id="code" value="" placeholder="{{ t('tracking') }}…" autofocus autocomplete="off">
+    <button class="btn big">{{ t('find') }}</button>
+  </form>
+  <p class="muted" style="margin-bottom:0">{{ t('scan_hint') }}</p>
+  <button class="btn ghost" style="margin-top:10px" type="button" onclick="startCam()">📷 {{ t('camera') }}</button>
+  <div id="reader"></div>
+</div>
+
+{% if code %}
+  {% if cargo %}
+  <div class="card">
+    <div class="grid2">
+      <div>
+        <h2>{{ t('tracking') }}: <span class="mono">{{ cargo.tracking_code }}</span></h2>
+        <div class="kv">
+          <div>{{ t('client_code') }}</div><div class="mono" style="font-size:20px">{{ cargo.client_code }}</div>
+          <div>{{ t('client') }}</div><div>{{ cargo.client.full_name }}</div>
+          <div>{{ t('phone') }}</div><div>{{ cargo.client.phone }}</div>
+          <div>{{ t('type') }}</div><div><span class="kind {{ cargo.kind }}">{{ cargo.kind }}</span></div>
+          <div>{{ t('status') }}</div><div><span class="badge big-status {{ BADGE[cargo.status] }}">{{ label(cargo.status) }}</span></div>
+        </div>
+      </div>
+      <div>
+        {% if suggested %}
+          <h2>{{ t('next_step') }}:</h2>
+          <form method="post" action="/cargo/{{ cargo.id }}/status">
+            <input type="hidden" name="status" value="{{ suggested }}">
+            <input type="hidden" name="next_url" value="/scan">
+            <p class="big-status"><b>{{ t('move_to') }}</b><br>→ {{ label(suggested) }}</p>
+            <button class="btn big" id="confirmBtn">✅ {{ t('yes_change') }}</button>
+          </form>
+        {% elif not allowed %}
+          <div class="flash error">{{ t('final_status') if cargo.status == ORDER[-1] else t('no_rights') }}</div>
+        {% endif %}
+        {% if allowed %}
+          <form method="post" action="/cargo/{{ cargo.id }}/status" style="margin-top:16px" class="form">
+            <input type="hidden" name="next_url" value="/scan">
+            <label>{{ t('change_status') }}</label>
+            <div style="display:flex;gap:8px">
+              <select name="status">{% for st in allowed %}<option value="{{ st }}" {{ 'selected' if st == suggested }}>{{ label(st) }}</option>{% endfor %}</select>
+              <button class="btn ghost">{{ t('save') }}</button>
+            </div>
+          </form>
+        {% endif %}
+        <p><a href="/cargo/{{ cargo.id }}">{{ t('details') }} →</a> · <a href="/cargo/{{ cargo.id }}/label" target="_blank">▥ {{ t('barcode') }}</a></p>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="flash error">{{ t('not_found') }}: <span class="mono">{{ code }}</span></div>
+    <a class="btn" href="/cargo-new?tracking={{ code|urlencode }}">➕ {{ t('create_with_code') }}</a>
+  </div>
+  {% endif %}
+{% endif %}
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+let cam;
+function startCam(){
+  if (cam || typeof Html5QrcodeScanner === 'undefined') return;
+  cam = new Html5QrcodeScanner("reader", {fps: 10, qrbox: {width: 300, height: 120}}, false);
+  cam.render(text => { cam.clear(); location.href = "/scan?code=" + encodeURIComponent(text); });
+}
+</script>
+{% endblock %}

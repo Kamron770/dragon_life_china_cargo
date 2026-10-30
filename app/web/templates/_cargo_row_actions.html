@@ -1,0 +1,21 @@
+{# expects: c (cargo), op, targets #}
+<div class="row-actions">
+  {% if not c.tracking_code %}
+    <form class="inline" method="post" action="/cargo/{{ c.id }}/generate">
+      <button class="btn sm">⚡ {{ t('generate') }}</button>
+    </form>
+  {% else %}
+    <a class="btn sm ghost" href="/cargo/{{ c.id }}/label" target="_blank">▥ {{ t('barcode') }}</a>
+  {% endif %}
+  {% set opts = [] %}
+  {% for st in ORDER %}{% if st != c.status and can_set(op.role, c.kind, st) %}{% set _ = opts.append(st) %}{% endif %}{% endfor %}
+  {% if opts %}
+  <form class="inline" method="post" action="/cargo/{{ c.id }}/status">
+    <select name="status" data-msg="{{ t('move_to') }}" onchange="if(this.value && confirm(this.dataset.msg + '\n' + this.options[this.selectedIndex].text)) this.form.submit(); else this.value='';" style="padding:5px 8px;font-size:12px">
+      <option value="">{{ t('change_status') }}…</option>
+      {% for st in opts %}<option value="{{ st }}">{{ label(st) }}</option>{% endfor %}
+    </select>
+  </form>
+  {% endif %}
+  <a class="btn sm ghost" href="/cargo/{{ c.id }}">{{ t('details') }}</a>
+</div>

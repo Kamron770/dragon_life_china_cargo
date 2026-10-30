@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t('login') }} — Dragon Life Cargo</title>
+<link rel="icon" href="/static/favicon.png">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="login-wrap">
+  <form class="login form" method="post" action="/login">
+    <img src="/static/logo_wide.jpg" alt="Dragon Life">
+    <p class="muted" style="text-align:center;margin-top:0">{{ t('panel') }}</p>
+    {% for kind, msg in flashes %}<div class="flash {{ kind }}">{{ msg }}</div>{% endfor %}
+    <label>{{ t('username') }}</label>
+    <input name="username" autocomplete="username" required autofocus>
+    <label>{{ t('password') }}</label>
+    <input name="password" type="password" autocomplete="current-password" required>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:16px">{{ t('login') }}</button>
+    <p style="text-align:center;margin-bottom:0"><a href="/lang/uz">O'zbekcha</a> · <a href="/lang/ru">Русский</a></p>
+  </form>
+</div>
+</body>
+</html>

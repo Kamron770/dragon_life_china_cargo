@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{ cargo.tracking_code }}</title>
+<style>
+  @page { size: 100mm 60mm; margin: 0 }
+  body { margin: 0; font-family: Arial, sans-serif; background: #eee }
+  .label { width: 100mm; height: 60mm; background: #fff; margin: 10px auto; padding: 4mm 5mm; box-sizing: border-box;
+           display: flex; flex-direction: column; justify-content: space-between; border: 1px dashed #bbb }
+  .head { display: flex; justify-content: space-between; align-items: center }
+  .head img { height: 9mm }
+  .code { font-size: 30px; font-weight: 800; letter-spacing: 1px }
+  .kind { background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 14px }
+  .bc { text-align: center } .bc img { width: 100%; height: 26mm }
+  .foot { display: flex; justify-content: space-between; font-size: 10px; color: #333 }
+  .bar { text-align: center; margin: 12px }
+  @media print { body { background: #fff } .label { margin: 0; border: none } .bar { display: none } }
+</style>
+</head>
+<body>
+<div class="bar"><button onclick="window.print()" style="font-size:16px;padding:8px 18px">🖨 {{ t('print') }}</button></div>
+<div class="label">
+  <div class="head">
+    <b style="font-size:16px;letter-spacing:1px"><span style="color:#d71920">🐉</span> DRAGON LIFE CARGO</b>
+    <span class="kind">{{ cargo.kind }}</span>
+  </div>
+  <div class="code">{{ cargo.client_code }}</div>
+  <div class="bc"><img src="/barcode/{{ cargo.tracking_code|urlencode }}.svg" alt=""></div>
+  <div class="foot"><span>{{ cargo.client.full_name }} · {{ cargo.client.phone }}</span><span>{{ now.strftime('%d.%m.%Y') }}</span></div>
+</div>
+<script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>
+</body>
+</html>

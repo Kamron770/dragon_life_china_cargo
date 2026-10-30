@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ t('dashboard') }}{% endblock %}
+{% block heading %}📦 {{ t('dashboard') }}{% endblock %}
+{% block actions %}
+  <a class="btn dark" href="/scan">📷 {{ t('scan') }}</a>
+  <a class="btn" href="/cargo-new">➕ {{ t('new_cargo') }}</a>
+{% endblock %}
+{% block content %}
+<div class="stats">
+  <a class="stat warn" href="/?status=no_tracking"><div class="n">{{ no_track }}</div><div class="l">⚡ {{ t('no_tracking') }}</div></a>
+  {% for st in ORDER %}
+  <a class="stat" href="/?status={{ st }}"><div class="n">{{ counts.get(st, 0) }}</div><div class="l">{{ label(st) }}</div></a>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <form class="filters" method="get" action="/">
+    <input name="q" value="{{ q }}" placeholder="🔎 {{ t('search') }}">
+    {% if kinds|length > 1 %}
+    <select name="kind">
+      <option value="">{{ t('all_types') }}</option>
+      {% for k in kinds %}<option value="{{ k }}" {{ 'selected' if kind == k }}>{{ k }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <select name="status">
+      <option value="">{{ t('all_statuses') }}</option>
+      <option value="active" {{ 'selected' if status == 'active' }}>{{ t('active') }}</option>
+      <option value="no_tracking" {{ 'selected' if status == 'no_tracking' }}>⚡ {{ t('no_tracking') }}</option>
+      {% for st in ORDER %}<option value="{{ st }}" {{ 'selected' if status == st }}>{{ label(st) }}</option>{% endfor %}
+    </select>
+    <button class="btn">{{ t('filter') }}</button>
+    <a class="btn ghost" href="/">{{ t('reset') }}</a>
+  </form>
+</div>
+
+<div class="card">
+  <div class="muted" style="margin-bottom:8px">{{ t('total') }}: <b>{{ total }}</b></div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr>
+      <th>{{ t('client_code') }}</th><th>{{ t('client') }}</th><th>{{ t('type') }}</th><th>{{ t('tracking') }}</th>
+      <th>{{ t('status') }}</th><th>{{ t('updated') }}</th><th>{{ t('actions') }}</th>
+    </tr></thead>
+    <tbody>
+    {% for c in cargos %}
+      <tr>
+        <td><a class="mono" href="/clients/{{ c.client.id }}">{{ c.client_code }}</a></td>
+        <td>{{ c.client.full_name }}<div class="muted">{{ c.client.phone }}</div></td>
+        <td><span class="kind {{ c.kind }}">{{ c.kind }}</span></td>
+        <td>
+          {% if c.tracking_code %}<span class="mono">{{ c.tracking_code }}</span>
+            {% if c.tracking_auto %}<span class="muted">({{ t('auto') }})</span>{% endif %}
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td><span class="badge {{ BADGE[c.status] }}">{{ label(c.status) }}</span></td>
+        <td class="muted">{{ c.updated_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td>{% include "_cargo_row_actions.html" %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted" style="text-align:center;padding:30px">{{ t('empty') }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if pages > 1 %}
+  <div class="pager">
+    {% if page > 1 %}<a class="btn ghost sm" href="{{ qs(page-1) }}">←</a>{% endif %}
+    <span class="muted" style="padding:5px">{{ page }} / {{ pages }}</span>
+    {% if page < pages %}<a class="btn ghost sm" href="{{ qs(page+1) }}">→</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
