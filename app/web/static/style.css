@@ -64,7 +64,6 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;font-wei
 .row-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .scanbox{display:flex;gap:8px}
 .scanbox input{flex:1;font-size:20px;padding:14px;font-family:ui-monospace,monospace}
-#reader{max-width:420px;margin-top:12px}
 .big-status{font-size:18px}
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#141414,#2b0607)}
 .login{background:#fff;padding:32px;border-radius:16px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
@@ -95,3 +94,18 @@ h3.sub{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--m
 .add-grid label{margin-top:6px}
 .preview{margin-top:16px;background:#f0f4f8;border-radius:10px;padding:12px 14px;line-height:1.6;border-left:4px solid var(--red)}
 .price-table select{min-width:80px}
+.cam-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.cam-actions .btn{flex:1;justify-content:center;min-height:48px;font-size:16px}
+.cam-actions #camTorch{flex:0 0 56px}
+.cam-box{position:relative;width:100%;max-width:560px;margin-top:12px;border-radius:12px;overflow:hidden;background:#000}
+.cam-box video{display:block;width:100%;height:auto}
+.cam-guide{position:absolute;left:3%;right:3%;top:25%;bottom:25%;border:3px solid rgba(255,255,255,.9);border-radius:10px;
+  box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+.cam-guide:after{content:"";position:absolute;left:4%;right:4%;top:50%;height:2px;background:#d71920;box-shadow:0 0 8px #d71920;
+  animation:scanline 1.6s ease-in-out infinite alternate}
+@keyframes scanline{from{transform:translateY(-35px)}to{transform:translateY(35px)}}
+#camMsg{margin-top:12px}
+[hidden]{display:none!important}
+.status-row{display:flex;gap:8px;flex-wrap:wrap}
+.status-row select{flex:1;min-width:0}
+.kv .badge{white-space:normal}

@@ -8,8 +8,17 @@
     <button class="btn big">{{ t('find') }}</button>
   </form>
   <p class="muted" style="margin-bottom:0">{{ t('scan_hint') }}</p>
-  <button class="btn ghost" style="margin-top:10px" type="button" onclick="startCam()">📷 {{ t('camera') }}</button>
-  <div id="reader"></div>
+  <div class="cam-actions">
+    <button class="btn dark" type="button" id="camStart">📷 {{ t('camera') }}</button>
+    <button class="btn ghost" type="button" id="camStop" hidden>✖ {{ t('camera_stop') }}</button>
+    <button class="btn ghost" type="button" id="camTorch" hidden>🔦</button>
+  </div>
+  <div id="camMsg" class="flash error" hidden></div>
+  <div id="camBox" class="cam-box" hidden>
+    <video id="camVideo" playsinline muted></video>
+    <div class="cam-guide"></div>
+  </div>
+  <p id="camHint" class="muted" style="font-size:12px" hidden>{{ t('camera_hint') }}</p>
 </div>
 
 {% if code %}
@@ -42,7 +51,7 @@
           <form method="post" action="/cargo/{{ cargo.id }}/status" style="margin-top:16px" class="form">
             <input type="hidden" name="next_url" value="/scan">
             <label>{{ t('change_status') }}</label>
-            <div style="display:flex;gap:8px">
+            <div class="status-row">
               <select name="status">{% for st in allowed %}<option value="{{ st }}" {{ 'selected' if st == suggested }}>{{ label(st) }}</option>{% endfor %}</select>
               <button class="btn ghost">{{ t('save') }}</button>
             </div>
@@ -60,13 +69,16 @@
   {% endif %}
 {% endif %}
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-let cam;
-function startCam(){
-  if (cam || typeof Html5QrcodeScanner === 'undefined') return;
-  cam = new Html5QrcodeScanner("reader", {fps: 10, qrbox: {width: 300, height: 120}}, false);
-  cam.render(text => { cam.clear(); location.href = "/scan?code=" + encodeURIComponent(text); });
-}
+  window.SCAN_TEXT = {
+    https: {{ t('cam_err_https')|tojson }},
+    denied: {{ t('cam_err_denied')|tojson }},
+    nocam: {{ t('cam_err_nocam')|tojson }},
+    lib: {{ t('cam_err_lib')|tojson }},
+    other: {{ t('cam_err_other')|tojson }},
+  };
+  window.SCAN_AUTOSTART = {{ 'false' if code else 'true' }};
 </script>
+<script src="/static/vendor/zxing-library-0.21.3.min.js"></script>
+<script src="/static/scanner.js?v=3"></script>
 {% endblock %}
