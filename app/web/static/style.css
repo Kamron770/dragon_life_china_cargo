@@ -115,3 +115,7 @@ h3.sub{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--m
 .live-toast .btn.ghost{background:transparent;color:#fff;border-color:#555}
 tr.row-new td{animation:rownew 4s ease-out}
 @keyframes rownew{from{background:#fff3c4}to{background:transparent}}
+.code-row{display:flex;gap:8px;flex-wrap:wrap}
+.code-row input{flex:1;min-width:140px}
+fieldset.new-client{border:2px dashed var(--red);border-radius:12px;padding:6px 14px 14px;margin:6px 0 4px}
+fieldset.new-client legend{font-weight:700;padding:0 6px}

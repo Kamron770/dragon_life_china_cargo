@@ -19,7 +19,7 @@ from ..db import DEFAULT_SETTINGS, SessionLocal
 from ..models import Cargo, Client, Operator, Setting, StatusHistory, Tariff, utcnow
 from ..security import hash_password, verify_password
 from ..services import (
-    BOT_STATUS, add_history, assign_tracking, get_bot, get_tariffs, normalize_tracking, notify_tracking, parse_client_code, set_status,
+    BOT_STATUS, add_history, assign_tracking, client_by_phone, get_bot, normalize_phone, get_tariffs, normalize_tracking, notify_tracking, parse_client_code, set_status,
 )
 from ..export import cargos_xlsx, full_xlsx
 from ..statuses import AT_CHINA, BADGE, ORDER, ROLES, WAITING, can_set, label, next_status, role_kinds, role_targets
@@ -340,25 +340,63 @@ def _routes(app: FastAPI) -> None:
 
     # ----- new cargo -----
     @app.get("/cargo-new")
-    async def cargo_new_page(request: Request, tracking: str = "", client_code: str = ""):
+    async def cargo_new_page(request: Request, tracking: str = "", client_code: str = "", new_client: str = "",
+                             new_name: str = "", new_phone: str = "", new_kind: str = ""):
         async with SessionLocal() as s:
             op = await current(request, s)
         return render(request, "cargo_new.html", op, tracking=tracking, client_code=client_code,
-                      statuses=[st for st in role_targets(op.role)], default_status=AT_CHINA)
+                      statuses=[st for st in role_targets(op.role)], default_status=AT_CHINA,
+                      kinds=role_kinds(op.role), new_client=new_client == "1", new_name=new_name,
+                      new_phone=new_phone, new_kind=new_kind)
+
+    @app.get("/api/client")
+    async def client_lookup(request: Request, code: str = ""):
+        """Shows the client's name under the code field while the operator types."""
+        async with SessionLocal() as s:
+            op = await current(request, s)
+            parsed = parse_client_code(code)
+            client = await s.get(Client, parsed[1]) if parsed else None
+        if not client or parsed[0] not in role_kinds(op.role):
+            return JSONResponse({"found": False})
+        return JSONResponse({"found": True, "name": client.full_name, "phone": client.phone,
+                             "code": client.code(parsed[0]), "telegram": bool(client.telegram_id)})
 
     @app.post("/cargo-new")
-    async def cargo_new(request: Request, client_code: str = Form(...), tracking: str = Form(""),
-                        status: str = Form(WAITING), weight_kg: str = Form(""), note: str = Form("")):
+    async def cargo_new(request: Request, client_code: str = Form(""), tracking: str = Form(""),
+                        status: str = Form(WAITING), weight_kg: str = Form(""), note: str = Form(""),
+                        new_client: str = Form(""), new_name: str = Form(""), new_phone: str = Form(""),
+                        new_kind: str = Form("")):
         lg = lang(request)
         async with SessionLocal() as s:
             op = await current(request, s)
-            parsed = parse_client_code(client_code)
-            client = await s.get(Client, parsed[1]) if parsed else None
-            redirect_back = RedirectResponse("/cargo-new?" + urlencode({"tracking": tracking, "client_code": client_code}), 303)
-            if not client or parsed[0] not in role_kinds(op.role):
-                flash(request, tr(lg, "bad_client_code"), "error")
-                return redirect_back
-            kind = parsed[0]
+            redirect_back = RedirectResponse("/cargo-new?" + urlencode({
+                "tracking": tracking, "client_code": client_code, "new_client": new_client,
+                "new_name": new_name, "new_phone": new_phone, "new_kind": new_kind}), 303)
+
+            if new_client == "1":
+                # New client typed in by the operator: permanent code is created automatically
+                name = " ".join(new_name.split())
+                phone = normalize_phone(new_phone)
+                kind = new_kind if new_kind in role_kinds(op.role) else None
+                if not 2 <= len(name) <= 64 or not phone or not kind:
+                    flash(request, tr(lg, "bad_new_client"), "error")
+                    return redirect_back
+                client = await client_by_phone(s, phone)
+                if client:
+                    client_msg = f"{tr(lg, 'client_exists')}: {client.code(kind)} — {client.full_name}"
+                else:
+                    client = Client(full_name=name, phone=phone, lang="uz")
+                    s.add(client)
+                    await s.flush()
+                    client_msg = f"{tr(lg, 'client_created')}: {client.avia_code} / {client.fura_code} — {name}"
+            else:
+                client_msg = None
+                parsed = parse_client_code(client_code)
+                client = await s.get(Client, parsed[1]) if parsed else None
+                if not client or parsed[0] not in role_kinds(op.role):
+                    flash(request, tr(lg, "bad_client_code"), "error")
+                    return redirect_back
+                kind = parsed[0]
             code = None
             if tracking.strip():
                 code = normalize_tracking(tracking)
@@ -385,6 +423,8 @@ def _routes(app: FastAPI) -> None:
                 await assign_tracking(s, cargo, op)  # also notifies the client
             else:
                 await notify_tracking(cargo)
+        if client_msg:
+            flash(request, client_msg)
         flash(request, f"{tr(lg, 'cargo_created')}: {cargo.tracking_code}")
         return RedirectResponse(f"/cargo/{cargo.id}", status_code=303)
 

@@ -6,12 +6,12 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import FSInputFile, KeyboardButton, Message, ReplyKeyboardMarkup
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from ..db import SessionLocal
 from ..models import Cargo, Client, StatusHistory
-from ..services import get_settings, get_tariffs, normalize_phone, normalize_tracking
+from ..services import client_by_phone, get_settings, get_tariffs, normalize_phone, normalize_tracking
 from ..statuses import ACTIVE, INACTIVE, WAITING, label
 from ..texts import WELCOME, all_variants, kind_info, kind_name, t
 
@@ -226,18 +226,38 @@ async def reg_phone(m: Message, state: FSMContext):
     if not phone:
         return await m.answer(t("bad_phone", lang))
 
+    # Sent with the "📱 Raqamni yuborish" button → Telegram confirms the number is this user's own
+    verified = bool(m.contact and m.contact.user_id == m.from_user.id)
+    cargo_count = 0
     async with SessionLocal() as s:
         client = await s.scalar(select(Client).where(Client.telegram_id == m.from_user.id))
+        linked = False
         if not client:
-            client = Client(telegram_id=m.from_user.id)
-            s.add(client)
+            # An operator may already have created this client in the panel: connect instead of duplicating
+            pre = await client_by_phone(s, phone, unlinked_only=True)
+            if pre and not verified:
+                return await m.answer(t("confirm_phone", lang),
+                                      reply_markup=kb([t("btn_back", lang)], contact_btn=t("btn_send_phone", lang)))
+            if pre:
+                client, linked = pre, True
+            else:
+                client = Client(telegram_id=m.from_user.id)
+                s.add(client)
+        client.telegram_id = m.from_user.id
         client.username = m.from_user.username
         client.lang = lang
-        client.full_name = data.get("name", m.from_user.full_name)
+        if not (linked and client.full_name):  # keep the name the operator typed
+            client.full_name = data.get("name", m.from_user.full_name)
         client.phone = phone
         await s.commit()
+        if linked:
+            cargo_count = await s.scalar(select(func.count(Cargo.id)).where(Cargo.client_id == client.id)) or 0
 
-    await m.answer(t("registered", lang, name=html.escape(client.full_name), a=client.avia_code, f=client.fura_code))
+    if linked:
+        await m.answer(t("linked", lang, name=html.escape(client.full_name), a=client.avia_code, f=client.fura_code,
+                         n=cargo_count))
+    else:
+        await m.answer(t("registered", lang, name=html.escape(client.full_name), a=client.avia_code, f=client.fura_code))
     await show_main(m, state, lang)
 
 

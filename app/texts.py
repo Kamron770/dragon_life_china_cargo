@@ -94,6 +94,22 @@ T = {
               "✈️ АВИА: <code>{a}</code>\n🚛 ФУРА: <code>{f}</code>\n\n"
               "Эти коды не меняются — используйте их для всех ваших грузов.",
     },
+    "linked": {
+        "uz": "🎉 Xush kelibsiz, <b>{name}</b>! Siz bizda allaqachon mijoz sifatida ro'yxatdan o'tgansiz.\n\n"
+              "🆔 <b>Sizning doimiy mijoz kodlaringiz:</b>\n"
+              "✈️ AVIA: <code>{a}</code>\n🚛 FURA: <code>{f}</code>\n\n"
+              "📦 Sizning nomingizda <b>{n} ta</b> yuk bor — «🔍 Treking» va «🗂 Mening yuklarim» bo'limlarida ko'ring.",
+        "ru": "🎉 Добро пожаловать, <b>{name}</b>! Вы уже зарегистрированы у нас как клиент.\n\n"
+              "🆔 <b>Ваши постоянные коды клиента:</b>\n"
+              "✈️ АВИА: <code>{a}</code>\n🚛 ФУРА: <code>{f}</code>\n\n"
+              "📦 На ваше имя <b>{n}</b> груз(ов) — смотрите в разделах «🔍 Трекинг» и «🗂 Мои грузы».",
+    },
+    "confirm_phone": {
+        "uz": "📱 Bu raqam bizda mijoz sifatida ro'yxatda bor. Uni tasdiqlash uchun pastdagi «📱 Raqamni yuborish» tugmasini bosing "
+              "(raqamni qo'lda yozmang).",
+        "ru": "📱 Этот номер уже есть у нас как клиент. Чтобы подтвердить его, нажмите кнопку «📱 Отправить номер» ниже "
+              "(не вводите номер вручную).",
+    },
     "main_menu": {"uz": "🏠 Asosiy menyu. Kerakli bo'limni tanlang 👇", "ru": "🏠 Главное меню. Выберите раздел 👇"},
     "need_start": {
         "uz": "Iltimos, avval ro'yxatdan o'ting: /start",

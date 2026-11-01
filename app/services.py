@@ -53,6 +53,14 @@ def normalize_phone(raw: str) -> str | None:
     return "+" + digits
 
 
+async def client_by_phone(s: AsyncSession, phone: str, unlinked_only: bool = False) -> Client | None:
+    """Client with this phone. unlinked_only: created by an operator, not yet connected to Telegram."""
+    q = select(Client).where(Client.phone == phone)
+    if unlinked_only:
+        q = q.where(Client.telegram_id.is_(None))
+    return await s.scalar(q.order_by(Client.id).limit(1))
+
+
 async def get_settings(s: AsyncSession) -> dict[str, str]:
     rows = (await s.scalars(select(Setting))).all()
     return {r.key: r.value for r in rows}

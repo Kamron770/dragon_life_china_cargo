@@ -46,7 +46,8 @@ Rollar:
 Sahifalar:
 - **Yuklar** — statistika, qidiruv (trek kod, A001/F001, ism, telefon), filtrlar. Trek kodsiz yuk uchun «⚡ Trek kod yaratish» tugmasi (bazada yo'q unikal kod: `DLA…` / `DLF…`), har bir yuk uchun «▥ Shtrix-kod» (Code128 yorliq, 100×60 mm, chop etish uchun).
 - **Skanerlash** — USB/Bluetooth shtrix-kod skaner, qo'lda kiritish yoki telefon kamerasi. Skanerlangandan keyin tizim keyingi holatni taklif qiladi: «Holatni o'zgartirasizmi? → Xitoydagi omborga yetib keldi» → bir bosish bilan tasdiqlanadi va keyingi skanga qaytadi.
-- **Yuk qo'shish** — mijoz kodi (A001/F001) bo'yicha. Trek kod bo'sh qoldirilsa — avtomatik yaratiladi va mijozga xabar boradi.
+- **Yuk qo'shish** — mijoz kodi (A001/F001) bo'yicha (kod yozilganda mijoz ismi ko'rinadi). Trek kod bo'sh qoldirilsa — avtomatik yaratiladi va mijozga xabar boradi.
+  **➕ Yangi mijoz** tugmasi: ism-familiya, telefon va yo'nalish kiritiladi, doimiy kod avtomatik yaratiladi. Shu raqam bazada bo'lsa, yangi mijoz yaratilmaydi — yuk mavjud mijozga yoziladi. Mijoz keyin botga kirib, raqamini «📱 Raqamni yuborish» tugmasi bilan yuborsa, bot uni shu kodga ulaydi va u yuklarini ko'radi (qo'lda yozilgan raqam bilan ulanmaydi — boshqa odam birovning raqamini yozib yuklarini ko'ra olmasligi uchun).
 - **Mijozlar** — ro'yxat va har bir mijozning yuklari.
 - **Operatorlar** — login/parol va rollar.
 - **💰 Narxlar va muddatlar** — AVIA va FURA uchun narxlar ro'yxati: administrator narx qatorlarini qo'shadi, o'zgartiradi, o'chiradi yoki vaqtincha yashiradi (narx, valyuta, birlik: 1 kg / 1 m³ / 1 dona, minimal miqdor, o'zbekcha/ruscha nomi). Muddatlar ham shu yerda. Pastda «Botda shunday ko'rinadi» namunasi bor, o'zgarish botda darhol ko'rinadi.

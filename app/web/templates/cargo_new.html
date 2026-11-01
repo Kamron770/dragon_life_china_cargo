@@ -2,11 +2,34 @@
 {% block title %}{{ t('new_cargo') }}{% endblock %}
 {% block heading %}➕ {{ t('new_cargo') }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:560px">
-  <form method="post" action="/cargo-new" class="form">
-    <label>{{ t('client_code') }} *</label>
-    <input name="client_code" value="{{ client_code }}" placeholder="A001" required autofocus style="font-size:18px" class="mono">
-    <div class="muted" style="font-size:12px;margin-top:4px">{{ t('client_code_hint') }}</div>
+<div class="card" style="max-width:600px">
+  <form method="post" action="/cargo-new" class="form" id="cargoForm">
+    <input type="hidden" name="new_client" id="newClientFlag" value="{{ '1' if new_client else '' }}">
+
+    <div id="existingBox" {{ 'hidden' if new_client }}>
+      <label>{{ t('client_code') }} *</label>
+      <div class="code-row">
+        <input name="client_code" id="clientCode" value="{{ client_code }}" placeholder="A001" style="font-size:18px" class="mono"
+               autocomplete="off" {{ '' if new_client else 'autofocus' }}>
+        <button type="button" class="btn dark" id="newClientBtn">➕ {{ t('new_client') }}</button>
+      </div>
+      <div id="clientInfo" class="muted" style="font-size:13px;margin-top:6px;min-height:18px">{{ t('client_code_hint') }}</div>
+    </div>
+
+    <fieldset id="newBox" class="new-client" {{ '' if new_client else 'hidden' }}>
+      <legend>🆕 {{ t('new_client_title') }}</legend>
+      <label>{{ t('full_name') }} *</label>
+      <input name="new_name" value="{{ new_name }}" maxlength="64" autocomplete="off">
+      <label>{{ t('phone') }} *</label>
+      <input name="new_phone" value="{{ new_phone }}" placeholder="+998901234567" inputmode="tel" autocomplete="off">
+      <label>{{ t('direction') }} *</label>
+      <select name="new_kind">
+        {% for k in kinds %}<option value="{{ k }}" {{ 'selected' if k == new_kind }}>{{ '✈️' if k == 'AVIA' else '🚛' }} {{ k }}</option>{% endfor %}
+      </select>
+      <p class="muted" style="font-size:12px;margin:10px 0 0">💡 {{ t('new_client_hint') }}</p>
+      <button type="button" class="btn ghost sm" id="existingBtn" style="margin-top:10px">← {{ t('existing_client') }}</button>
+    </fieldset>
+
     <label>{{ t('tracking_optional') }}</label>
     <input name="tracking" value="{{ tracking }}" class="mono">
     <label>{{ t('initial_status') }}</label>
@@ -20,4 +43,41 @@
     <button class="btn big" style="margin-top:16px">{{ t('save') }}</button>
   </form>
 </div>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const hint = $('clientInfo').textContent;
+  const TXT = { notFound: {{ t('bad_client_code')|tojson }}, inBot: {{ t('in_bot')|tojson }}, notInBot: {{ t('not_in_bot')|tojson }} };
+
+  function mode(isNew) {
+    $('newClientFlag').value = isNew ? '1' : '';
+    $('existingBox').hidden = isNew;
+    $('newBox').hidden = !isNew;
+    $('clientCode').required = !isNew;
+    document.querySelector('[name=new_name]').required = isNew;
+    document.querySelector('[name=new_phone]').required = isNew;
+    (isNew ? document.querySelector('[name=new_name]') : $('clientCode')).focus();
+  }
+  $('newClientBtn').addEventListener('click', () => mode(true));
+  $('existingBtn').addEventListener('click', () => mode(false));
+  mode($('newClientFlag').value === '1');
+
+  // show who the typed code belongs to
+  let timer;
+  $('clientCode').addEventListener('input', () => {
+    clearTimeout(timer);
+    const code = $('clientCode').value.trim();
+    if (!code) { $('clientInfo').textContent = hint; return; }
+    timer = setTimeout(async () => {
+      try {
+        const r = await (await fetch('/api/client?code=' + encodeURIComponent(code), { cache: 'no-store' })).json();
+        $('clientInfo').textContent = r.found
+          ? `✅ ${r.code} — ${r.name} · ${r.phone} · ${r.telegram ? TXT.inBot : TXT.notInBot}`
+          : `❌ ${TXT.notFound}`;
+      } catch (e) {}
+    }, 300);
+  });
+  if ($('clientCode').value) $('clientCode').dispatchEvent(new Event('input'));
+})();
+</script>
 {% endblock %}
