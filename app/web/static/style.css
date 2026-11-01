@@ -109,3 +109,9 @@ h3.sub{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--m
 .status-row{display:flex;gap:8px;flex-wrap:wrap}
 .status-row select{flex:1;min-width:0}
 .kv .badge{white-space:normal}
+.live-toast{position:fixed;right:16px;bottom:16px;z-index:50;display:flex;gap:10px;align-items:center;background:var(--ink);color:#fff;
+  padding:12px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-weight:600;animation:toastin .25s ease-out;max-width:calc(100vw - 32px)}
+@keyframes toastin{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.live-toast .btn.ghost{background:transparent;color:#fff;border-color:#555}
+tr.row-new td{animation:rownew 4s ease-out}
+@keyframes rownew{from{background:#fff3c4}to{background:transparent}}

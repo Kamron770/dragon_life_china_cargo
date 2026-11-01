@@ -6,7 +6,7 @@
   <a class="btn" href="/cargo-new">➕ {{ t('new_cargo') }}</a>
 {% endblock %}
 {% block content %}
-<div class="stats">
+<div class="stats" data-live="stats">
   <a class="stat warn" href="/?status=no_tracking"><div class="n">{{ no_track }}</div><div class="l">⚡ {{ t('no_tracking') }}</div></a>
   {% for st in ORDER %}
   <a class="stat" href="/?status={{ st }}"><div class="n">{{ counts.get(st, 0) }}</div><div class="l">{{ label(st) }}</div></a>
@@ -34,7 +34,7 @@
   </form>
 </div>
 
-<div class="card">
+<div class="card" data-live="list">
   <div class="muted" style="margin-bottom:8px">{{ t('total') }}: <b>{{ total }}</b></div>
   <div class="table-wrap">
   <table>
@@ -44,7 +44,7 @@
     </tr></thead>
     <tbody>
     {% for c in cargos %}
-      <tr>
+      <tr data-id="{{ c.id }}">
         <td><a class="mono" href="/clients/{{ c.client.id }}">{{ c.client_code }}</a></td>
         <td>{{ c.client.full_name }}<div class="muted">{{ c.client.phone }}</div></td>
         <td><span class="kind {{ c.kind }}">{{ c.kind }}</span></td>

@@ -27,6 +27,7 @@
       {% endif %}
     </nav>
     <div class="side-foot">
+      <button type="button" id="notifyBtn" class="btn sm ghost" style="width:100%;margin-bottom:10px;justify-content:center" hidden>🔔 {{ t('live_enable') }}</button>
       <div><b>{{ op.full_name or op.username }}</b></div>
       <div>{{ role_name(op.role) }}</div>
       <div style="margin-top:8px;display:flex;gap:6px;align-items:center" class="langs">
@@ -49,5 +50,17 @@
     {% block content %}{% endblock %}
   </main>
 </div>
+<div id="liveToast" class="live-toast" hidden>
+  <span id="liveToastText"></span>
+  <a href="/" class="btn sm">{{ t('live_open') }}</a>
+  <button type="button" class="btn sm ghost" id="liveToastClose">✖</button>
+</div>
+<script>
+  window.LIVE_TEXT = {
+    new_cargo: {{ t('live_new_cargo')|tojson }},
+    notify_title: "Dragon Life Cargo",
+  };
+</script>
+<script src="/static/live.js?v=1"></script>
 </body>
 </html>

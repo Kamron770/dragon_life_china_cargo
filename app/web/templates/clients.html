@@ -10,14 +10,14 @@
     <a class="btn ghost" href="/clients">{{ t('reset') }}</a>
   </form>
 </div>
-<div class="card">
+<div class="card" data-live="list">
   <div class="muted" style="margin-bottom:8px">{{ t('total') }}: <b>{{ total }}</b></div>
   <div class="table-wrap">
   <table>
     <thead><tr><th>AVIA</th><th>FURA</th><th>{{ t('full_name') }}</th><th>{{ t('phone') }}</th><th>Telegram</th><th>{{ t('cargos') }}</th><th>{{ t('registered') }}</th></tr></thead>
     <tbody>
     {% for c in clients %}
-      <tr onclick="location.href='/clients/{{ c.id }}'" style="cursor:pointer">
+      <tr data-client="{{ c.id }}" onclick="location.href='/clients/{{ c.id }}'" style="cursor:pointer">
         <td class="mono">{{ c.avia_code }}</td><td class="mono">{{ c.fura_code }}</td>
         <td>{{ c.full_name }}</td><td>{{ c.phone }}</td>
         <td class="muted">{{ '@' ~ c.username if c.username else '' }}</td>

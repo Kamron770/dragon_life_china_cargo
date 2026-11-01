@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 import barcode
 from barcode.writer import SVGWriter
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, or_, select
@@ -80,7 +80,8 @@ async def current(request: Request, s, admin: bool = False) -> Operator:
 
 def render(request: Request, name: str, op: Operator | None = None, **ctx):
     lg = lang(request)
-    messages = request.session.pop("flash", [])
+    live = request.headers.get("X-Live") == "1"
+    messages = [] if live else request.session.pop("flash", [])
     return templates.TemplateResponse(request, name, {
         "op": op, "lang": lg, "t": lambda k: tr(lg, k), "flashes": messages,
         "label": lambda st: label(st, lg), "BADGE": BADGE, "ORDER": ORDER, "ROLES": ROLES,
@@ -163,6 +164,27 @@ def barcode_svg(code: str) -> bytes:
 # ---------------- routes ----------------
 
 def _routes(app: FastAPI) -> None:
+
+    @app.get("/api/updates")
+    async def updates(request: Request, since_id: int = 0):
+        """Cheap check used by live.js every few seconds: has anything changed?"""
+        async with SessionLocal() as s:
+            op_id = request.session.get("op")
+            op = await s.get(Operator, op_id) if op_id else None
+            if not op or not op.is_active:
+                return JSONResponse({"error": "login"}, status_code=401)
+            kinds = role_kinds(op.role)
+            last_id, changed, total = (await s.execute(
+                select(func.max(Cargo.id), func.max(Cargo.updated_at), func.count(Cargo.id)).where(Cargo.kind.in_(kinds))
+            )).one()
+            last_client = await s.scalar(select(func.max(Client.id)))
+            new_count = await s.scalar(
+                select(func.count(Cargo.id)).where(Cargo.kind.in_(kinds), Cargo.id > since_id)
+            ) if since_id else 0
+        return JSONResponse({
+            "last_id": last_id or 0, "changed": changed.isoformat() if changed else "", "total": total,
+            "last_client": last_client or 0, "new_count": new_count,
+        }, headers={"Cache-Control": "no-store"})
 
     @app.get("/healthz")
     async def healthz():
