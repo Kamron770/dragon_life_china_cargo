@@ -1,0 +1,24 @@
+{# Permission checkboxes. expects: o (operator or none), disabled (bool) #}
+{% set have = (o.permissions or '').split(',') if o else [] %}
+<div class="perm-grid" {{ 'hidden' if o and o.role == 'admin' }}>
+  <div class="perm-group">
+    <div class="perm-title">📦 {{ t('perm_kinds') }}</div>
+    {% for k in KINDS %}
+    <label class="chk"><input type="checkbox" name="perm" value="{{ k }}" {{ 'checked' if k in have }} {{ 'disabled' if disabled }}>
+      {{ '✈️' if k == 'AVIA' else '🚛' }} {{ k }}</label>
+    {% endfor %}
+  </div>
+  <div class="perm-group">
+    <div class="perm-title">🔄 {{ t('perm_statuses') }}</div>
+    {% for st in ORDER %}
+    <label class="chk"><input type="checkbox" name="perm" value="s:{{ st }}" {{ 'checked' if ('s:' ~ st) in have }} {{ 'disabled' if disabled }}>
+      {{ label(st) }}</label>
+    {% endfor %}
+  </div>
+  <div class="perm-group">
+    <div class="perm-title">⚙️ {{ t('perm_extras') }}</div>
+    <label class="chk"><input type="checkbox" name="perm" value="add" {{ 'checked' if 'add' in have }} {{ 'disabled' if disabled }}> ➕ {{ t('perm_add') }}</label>
+    <label class="chk"><input type="checkbox" name="perm" value="export" {{ 'checked' if 'export' in have }} {{ 'disabled' if disabled }}> 📥 {{ t('perm_export') }}</label>
+  </div>
+</div>
+<div class="muted admin-note" style="font-size:13px" {{ '' if o and o.role == 'admin' else 'hidden' }}>👑 {{ t('admin_all_rights') }}</div>

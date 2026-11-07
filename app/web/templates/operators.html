@@ -2,37 +2,60 @@
 {% block title %}{{ t('operators') }}{% endblock %}
 {% block heading %}🛡 {{ t('operators') }}{% endblock %}
 {% block content %}
-<div class="card">
-  <h2>{{ t('add_operator') }}</h2>
-  <form method="post" action="/admin/operators" class="filters">
-    <input name="username" placeholder="{{ t('username') }} *" required>
-    <input name="password" placeholder="{{ t('password') }} *" required minlength="4">
-    <input name="full_name" placeholder="{{ t('full_name') }}">
-    <select name="role" required>
-      {% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if r == 'china_avia' }}>{{ role_name(r) }}</option>{% endfor %}
-    </select>
-    <button class="btn">➕ {{ t('save') }}</button>
+<details class="card add-op" {{ 'open' if operators|length < 2 }}>
+  <summary><b>➕ {{ t('add_operator') }}</b></summary>
+  <form method="post" action="/admin/operators" class="form op-form">
+    <div class="op-fields">
+      <div><label>{{ t('username') }} *</label><input name="username" required autocomplete="off"></div>
+      <div><label>{{ t('password') }} *</label><input name="password" required minlength="4" autocomplete="new-password"></div>
+      <div><label>{{ t('full_name') }}</label><input name="full_name"></div>
+      <div><label>{{ t('role') }}</label>
+        <select name="role" class="role-select">
+          <option value="operator" selected>{{ role_name('operator') }}</option>
+          <option value="admin">{{ role_name('admin') }}</option>
+        </select></div>
+    </div>
+    {% with o=none, disabled=false %}{% include "_perm_fields.html" %}{% endwith %}
+    <button class="btn" style="margin-top:12px">➕ {{ t('save') }}</button>
   </form>
-</div>
-<div class="card">
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th>{{ t('username') }}</th><th>{{ t('full_name') }}</th><th>{{ t('role') }}</th><th>{{ t('new_password') }}</th><th>{{ t('is_active') }}</th><th></th></tr></thead>
-    <tbody>
-    {% for o in operators %}
-      <tr>
-        <td class="mono">{{ o.username }}{% if o.id == op.id %} <span class="muted">({{ t('you') }})</span>{% endif %}</td>
-        <td><input form="op{{ o.id }}" name="full_name" value="{{ o.full_name }}"></td>
-        <td><select form="op{{ o.id }}" name="role" {{ 'disabled' if o.id == op.id }}>
-          {% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if r == o.role }}>{{ role_name(r) }}</option>{% endfor %}
-        </select></td>
-        <td><input form="op{{ o.id }}" name="password" type="password" autocomplete="new-password" placeholder="••••"></td>
-        <td><input form="op{{ o.id }}" type="checkbox" name="is_active" value="1" {{ 'checked' if o.is_active }} {{ 'disabled' if o.id == op.id }}></td>
-        <td><form id="op{{ o.id }}" method="post" action="/admin/operators/{{ o.id }}"><button class="btn sm">{{ t('save') }}</button></form></td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+</details>
+
+{% for o in operators %}
+<form method="post" action="/admin/operators/{{ o.id }}" class="card form op-form {{ '' if o.is_active else 'op-off' }}">
+  <div class="op-head">
+    <div>
+      <span class="mono" style="font-size:16px">{{ o.username }}</span>
+      {% if o.id == op.id %}<span class="muted">({{ t('you') }})</span>{% endif %}
+      <span class="badge {{ 'purple' if o.role == 'admin' else 'blue' }}">{{ role_name(o.role) }}</span>
+      {% if not o.is_active %}<span class="badge gray">{{ t('inactive_op') }}</span>{% endif %}
+    </div>
+    <label class="chk"><input type="checkbox" name="is_active" value="1" {{ 'checked' if o.is_active }} {{ 'disabled' if o.id == op.id }}> {{ t('is_active') }}</label>
   </div>
-</div>
+  <div class="op-fields">
+    <div><label>{{ t('full_name') }}</label><input name="full_name" value="{{ o.full_name }}"></div>
+    <div><label>{{ t('role') }}</label>
+      <select name="role" class="role-select" {{ 'disabled' if o.id == op.id }}>
+        <option value="operator" {{ 'selected' if o.role != 'admin' }}>{{ role_name('operator') }}</option>
+        <option value="admin" {{ 'selected' if o.role == 'admin' }}>{{ role_name('admin') }}</option>
+      </select></div>
+    <div><label>{{ t('new_password') }}</label><input name="password" type="password" autocomplete="new-password" placeholder="••••"></div>
+  </div>
+  {% with disabled=(o.id == op.id) %}{% include "_perm_fields.html" %}{% endwith %}
+  <button class="btn sm" style="margin-top:12px">💾 {{ t('save') }}</button>
+</form>
+{% endfor %}
+
+<script>
+  // Administrator has every right: hide the checkboxes while "Administrator" is chosen
+  document.querySelectorAll('form.op-form').forEach(f => {
+    const sel = f.querySelector('.role-select');
+    if (!sel) return;
+    const sync = () => {
+      const admin = sel.value === 'admin';
+      f.querySelector('.perm-grid').hidden = admin;
+      f.querySelector('.admin-note').hidden = !admin;
+    };
+    sel.addEventListener('change', sync); sync();
+  });
+</script>
 {% endblock %}

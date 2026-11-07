@@ -1,12 +1,13 @@
 import logging
 import secrets
 
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from .config import settings
 from .models import Base, Operator, Setting, Tariff
 from .security import hash_password
+from .statuses import LEGACY_ROLES
 
 log = logging.getLogger(__name__)
 
@@ -48,12 +49,37 @@ async def _ensure_admin(s: AsyncSession) -> None:
         log.warning("Admin account created: %s", settings.ADMIN_USERNAME)
 
 
+def _add_missing_columns(conn) -> None:
+    """create_all() makes new tables but never changes existing ones: add new columns here."""
+    insp = inspect(conn)
+    for table, column, ddl in NEW_COLUMNS:
+        if table in insp.get_table_names() and column not in {c["name"] for c in insp.get_columns(table)}:
+            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
+            log.warning("Database: added column %s.%s", table, column)
+
+
+# (table, column, SQL type) — columns added after the first release
+NEW_COLUMNS = [
+    ("operators", "permissions", "TEXT DEFAULT ''"),
+]
+
+
+async def _migrate_operator_roles(s: AsyncSession) -> None:
+    """Old fixed roles (China AVIA / China FURA / Uzbekistan) → operator with the same rights ticked."""
+    for op in (await s.scalars(select(Operator).where(Operator.role.in_(list(LEGACY_ROLES))))).all():
+        op.permissions = ",".join(LEGACY_ROLES[op.role])
+        op.role = "operator"
+        log.warning("Operator %s moved to permissions: %s", op.username, op.permissions)
+
+
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_add_missing_columns)
 
     async with SessionLocal() as s:
         await _ensure_admin(s)
+        await _migrate_operator_roles(s)
         old = {r.key: r for r in (await s.scalars(select(Setting))).all()}
         for key, value in DEFAULT_SETTINGS.items():
             if key not in old:

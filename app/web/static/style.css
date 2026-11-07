@@ -119,3 +119,16 @@ tr.row-new td{animation:rownew 4s ease-out}
 .code-row input{flex:1;min-width:140px}
 fieldset.new-client{border:2px dashed var(--red);border-radius:12px;padding:6px 14px 14px;margin:6px 0 4px}
 fieldset.new-client legend{font-weight:700;padding:0 6px}
+.op-form .op-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.op-form .op-head .badge{margin-left:6px}
+.op-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px}
+.perm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+.perm-group{background:#fafafa;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.perm-title{font-weight:700;font-size:13px;margin-bottom:6px}
+label.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);font-weight:500;margin:6px 0;cursor:pointer}
+label.chk input{width:18px;height:18px;accent-color:var(--red);flex:none}
+.admin-note{margin-top:12px}
+.op-off{opacity:.65}
+details.add-op summary{cursor:pointer;list-style:none}
+details.add-op summary::-webkit-details-marker{display:none}
+details.add-op[open] summary{margin-bottom:6px}

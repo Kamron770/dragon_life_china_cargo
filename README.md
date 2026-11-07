@@ -39,9 +39,13 @@ Administrator istalgan holatni qo'ya oladi.
 ## Veb-panel
 
 Rollar:
-- **Xitoy operatori (AVIA)** — faqat AVIA yuklarini ko'radi, 1–3 holatlarni qo'yadi.
-- **Xitoy operatori (FURA)** — faqat FURA yuklarini ko'radi, 1–3 holatlarni qo'yadi.
-- **O'zbekiston operatori** — barcha yuklar, 4–5 holatlarni qo'yadi.
+- **Administrator** — hamma narsa: barcha yuklar va holatlar, operatorlarni boshqarish, narx/muddatlar, eksport.
+- **Operator** — vakolatlarini administrator «🛡 Operatorlar» sahifasida katakchalar bilan o'zi tanlaydi:
+  - **Yo'nalishlar** — AVIA, FURA yoki ikkalasi (operator faqat shu yuklarni ko'radi va ular bo'yicha xabar oladi);
+  - **Qo'ya oladigan holatlar** — 5 ta holatdan istalganlari (masalan, Xitoy ombori uchun 1–3, Toshkent ombori uchun 4–5);
+  - **Qo'shimcha** — yuk va yangi mijoz qo'shish, Excel yuklab olish.
+
+  Vakolatlar istalgan vaqtda o'zgartiriladi, operatorni «Faol» belgisini olib o'chirib qo'yish mumkin. Eski «Xitoy AVIA / Xitoy FURA / O'zbekiston» operatorlari yangilanishda avtomatik ravishda xuddi shu huquqlar belgilangan «Operator»ga aylantiriladi.
 
 Sahifalar:
 - **Yuklar** — statistika, qidiruv (trek kod, A001/F001, ism, telefon), filtrlar. Trek kodsiz yuk uchun «⚡ Trek kod yaratish» tugmasi (bazada yo'q unikal kod: `DLA…` / `DLF…`), har bir yuk uchun «▥ Shtrix-kod» (Code128 yorliq, 100×60 mm, chop etish uchun).
@@ -64,7 +68,7 @@ cp .env.example .env     # BOT_TOKEN, SECRET_KEY, ADMIN_PASSWORD ni to'ldiring
 python main.py
 ```
 
-Panel: `http://SERVER:8000` — birinchi kirish `.env` dagi `ADMIN_USERNAME` / `ADMIN_PASSWORD` bilan. So'ng «Operatorlar» bo'limida 3 ta operator uchun login/parol yarating.
+Panel: `http://SERVER:8000` — birinchi kirish `.env` dagi `ADMIN_USERNAME` / `ADMIN_PASSWORD` bilan. So'ng «Operatorlar» bo'limida operatorlar uchun login/parol yarating va vakolatlarini belgilang.
 
 Docker + PostgreSQL bilan:
 

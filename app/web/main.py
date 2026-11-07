@@ -22,7 +22,10 @@ from ..services import (
     BOT_STATUS, add_history, assign_tracking, client_by_phone, get_bot, normalize_phone, get_tariffs, normalize_tracking, notify_tracking, parse_client_code, set_status,
 )
 from ..export import cargos_xlsx, full_xlsx
-from ..statuses import AT_CHINA, BADGE, ORDER, ROLES, WAITING, can_set, label, next_status, role_kinds, role_targets
+from ..statuses import (
+    AT_CHINA, BADGE, EXTRAS, KINDS, ORDER, ROLES, WAITING, can, can_set, label, next_status, op_kinds, op_targets,
+    parse_perms,
+)
 from ..texts import num, price_line
 from .i18n import tr
 
@@ -50,7 +53,7 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(Forbidden)
     async def _forbidden(request: Request, exc):
-        flash(request, tr(lang(request), "only_admin"), "error")
+        flash(request, tr(lang(request), "no_access"), "error")
         return RedirectResponse("/", status_code=303)
 
     _routes(app)
@@ -86,6 +89,7 @@ def render(request: Request, name: str, op: Operator | None = None, **ctx):
         "op": op, "lang": lg, "t": lambda k: tr(lg, k), "flashes": messages,
         "label": lambda st: label(st, lg), "BADGE": BADGE, "ORDER": ORDER, "ROLES": ROLES,
         "role_name": lambda r: ROLES.get(r, {}).get(lg, r), "can_set": can_set, "next_status": next_status,
+        "can": can, "op_kinds": op_kinds, "op_targets": op_targets, "KINDS": KINDS, "EXTRAS": EXTRAS,
         **ctx,
     })
 
@@ -132,7 +136,7 @@ async def bot_info() -> dict:
 
 def cargo_query(op: Operator, q: str, kind: str, status: str):
     """Cargo list filters shared by the dashboard and the Excel export."""
-    kinds = role_kinds(op.role)
+    kinds = op_kinds(op)
     base = select(Cargo).join(Client).where(Cargo.kind.in_(kinds))
     if q.strip():
         base = base.where(search_filter(q))
@@ -173,7 +177,7 @@ def _routes(app: FastAPI) -> None:
             op = await s.get(Operator, op_id) if op_id else None
             if not op or not op.is_active:
                 return JSONResponse({"error": "login"}, status_code=401)
-            kinds = role_kinds(op.role)
+            kinds = op_kinds(op)
             last_id, changed, total = (await s.execute(
                 select(func.max(Cargo.id), func.max(Cargo.updated_at), func.count(Cargo.id)).where(Cargo.kind.in_(kinds))
             )).one()
@@ -220,7 +224,7 @@ def _routes(app: FastAPI) -> None:
     async def dashboard(request: Request, q: str = "", kind: str = "", status: str = "", page: int = 1):
         async with SessionLocal() as s:
             op = await current(request, s)
-            kinds = role_kinds(op.role)
+            kinds = op_kinds(op)
             base = cargo_query(op, q, kind, status)
 
             total = await s.scalar(select(func.count()).select_from(base.subquery()))
@@ -241,7 +245,7 @@ def _routes(app: FastAPI) -> None:
         return render(request, "dashboard.html", op, cargos=cargos, q=q, kind=kind, status=status, kinds=kinds,
                       counts=counts, no_track=no_track, total=total, page=page, pages=pages, qs=qs,
                       export_qs=urlencode({"q": q, "kind": kind, "status": status}),
-                      targets=role_targets(op.role))
+                      targets=op_targets(op))
 
     # ----- cargo actions -----
     @app.post("/cargo/{cargo_id}/generate")
@@ -249,7 +253,7 @@ def _routes(app: FastAPI) -> None:
         async with SessionLocal() as s:
             op = await current(request, s)
             cargo = await load_cargo(s, cargo_id)
-            if cargo and cargo.kind in role_kinds(op.role) and not cargo.tracking_code:
+            if cargo and cargo.kind in op_kinds(op) and not cargo.tracking_code:
                 await assign_tracking(s, cargo, op)
                 flash(request, f"{tr(lang(request), 'tracking_generated')}: {cargo.tracking_code}")
         return back(request)
@@ -259,7 +263,7 @@ def _routes(app: FastAPI) -> None:
         async with SessionLocal() as s:
             op = await current(request, s)
             cargo = await load_cargo(s, cargo_id)
-            if not cargo or status not in ORDER or not can_set(op.role, cargo.kind, status):
+            if not cargo or status not in ORDER or not can_set(op, cargo.kind, status):
                 flash(request, tr(lang(request), "no_rights"), "error")
             elif await set_status(s, cargo, status, op):
                 flash(request, f"{tr(lang(request), 'status_changed')}: {cargo.tracking_code or cargo.id} → {label(status, lang(request))}")
@@ -272,16 +276,16 @@ def _routes(app: FastAPI) -> None:
         async with SessionLocal() as s:
             op = await current(request, s)
             cargo = await load_cargo(s, cargo_id)
-        if not cargo or cargo.kind not in role_kinds(op.role):
+        if not cargo or cargo.kind not in op_kinds(op):
             return RedirectResponse("/", status_code=303)
-        return render(request, "cargo.html", op, cargo=cargo, targets=role_targets(op.role))
+        return render(request, "cargo.html", op, cargo=cargo, targets=op_targets(op))
 
     @app.post("/cargo/{cargo_id}/edit")
     async def cargo_edit(request: Request, cargo_id: int, weight_kg: str = Form(""), note: str = Form("")):
         async with SessionLocal() as s:
             op = await current(request, s)
             cargo = await load_cargo(s, cargo_id)
-            if cargo and cargo.kind in role_kinds(op.role):
+            if cargo and cargo.kind in op_kinds(op):
                 try:
                     cargo.weight_kg = float(weight_kg.replace(",", ".")) if weight_kg.strip() else None
                 except ValueError:
@@ -315,7 +319,7 @@ def _routes(app: FastAPI) -> None:
         async with SessionLocal() as s:
             op = await current(request, s)
             cargo = await load_cargo(s, cargo_id)
-        if not cargo or not cargo.tracking_code or cargo.kind not in role_kinds(op.role):
+        if not cargo or not cargo.tracking_code or cargo.kind not in op_kinds(op):
             return RedirectResponse("/", status_code=303)
         return render(request, "label.html", op, cargo=cargo, now=utcnow())
 
@@ -332,7 +336,7 @@ def _routes(app: FastAPI) -> None:
                     cargo = await load_cargo(s, cargo.id)
         allowed = []
         if cargo:
-            allowed = [st for st in ORDER if st != cargo.status and can_set(op.role, cargo.kind, st)]
+            allowed = [st for st in ORDER if st != cargo.status and can_set(op, cargo.kind, st)]
         suggested = None
         if cargo and (nxt := next_status(cargo.status)) and nxt in allowed:
             suggested = nxt
@@ -344,9 +348,11 @@ def _routes(app: FastAPI) -> None:
                              new_name: str = "", new_phone: str = "", new_kind: str = ""):
         async with SessionLocal() as s:
             op = await current(request, s)
+            if not can(op, "add"):
+                raise Forbidden()
         return render(request, "cargo_new.html", op, tracking=tracking, client_code=client_code,
-                      statuses=[st for st in role_targets(op.role)], default_status=AT_CHINA,
-                      kinds=role_kinds(op.role), new_client=new_client == "1", new_name=new_name,
+                      statuses=[st for st in op_targets(op)], default_status=AT_CHINA,
+                      kinds=op_kinds(op), new_client=new_client == "1", new_name=new_name,
                       new_phone=new_phone, new_kind=new_kind)
 
     @app.get("/api/client")
@@ -356,7 +362,7 @@ def _routes(app: FastAPI) -> None:
             op = await current(request, s)
             parsed = parse_client_code(code)
             client = await s.get(Client, parsed[1]) if parsed else None
-        if not client or parsed[0] not in role_kinds(op.role):
+        if not client or parsed[0] not in op_kinds(op):
             return JSONResponse({"found": False})
         return JSONResponse({"found": True, "name": client.full_name, "phone": client.phone,
                              "code": client.code(parsed[0]), "telegram": bool(client.telegram_id)})
@@ -369,6 +375,8 @@ def _routes(app: FastAPI) -> None:
         lg = lang(request)
         async with SessionLocal() as s:
             op = await current(request, s)
+            if not can(op, "add"):
+                raise Forbidden()
             redirect_back = RedirectResponse("/cargo-new?" + urlencode({
                 "tracking": tracking, "client_code": client_code, "new_client": new_client,
                 "new_name": new_name, "new_phone": new_phone, "new_kind": new_kind}), 303)
@@ -377,7 +385,7 @@ def _routes(app: FastAPI) -> None:
                 # New client typed in by the operator: permanent code is created automatically
                 name = " ".join(new_name.split())
                 phone = normalize_phone(new_phone)
-                kind = new_kind if new_kind in role_kinds(op.role) else None
+                kind = new_kind if new_kind in op_kinds(op) else None
                 if not 2 <= len(name) <= 64 or not phone or not kind:
                     flash(request, tr(lg, "bad_new_client"), "error")
                     return redirect_back
@@ -393,7 +401,7 @@ def _routes(app: FastAPI) -> None:
                 client_msg = None
                 parsed = parse_client_code(client_code)
                 client = await s.get(Client, parsed[1]) if parsed else None
-                if not client or parsed[0] not in role_kinds(op.role):
+                if not client or parsed[0] not in op_kinds(op):
                     flash(request, tr(lg, "bad_client_code"), "error")
                     return redirect_back
                 kind = parsed[0]
@@ -406,7 +414,7 @@ def _routes(app: FastAPI) -> None:
                 if await s.scalar(select(Cargo.id).where(Cargo.tracking_code == code)):
                     flash(request, tr(lg, "tracking_exists"), "error")
                     return redirect_back
-            if status not in ORDER or not can_set(op.role, kind, status):
+            if status not in ORDER or not can_set(op, kind, status):
                 status = WAITING
             try:
                 weight = float(weight_kg.replace(",", ".")) if weight_kg.strip() else None
@@ -459,7 +467,7 @@ def _routes(app: FastAPI) -> None:
             if not client:
                 return RedirectResponse("/clients", status_code=303)
             cargos = (await s.scalars(
-                select(Cargo).where(Cargo.client_id == client_id, Cargo.kind.in_(role_kinds(op.role)))
+                select(Cargo).where(Cargo.client_id == client_id, Cargo.kind.in_(op_kinds(op)))
                 .options(selectinload(Cargo.client)).order_by(Cargo.updated_at.desc())
             )).all()
         return render(request, "client.html", op, client=client, cargos=cargos)
@@ -472,43 +480,60 @@ def _routes(app: FastAPI) -> None:
             ops = (await s.scalars(select(Operator).order_by(Operator.id))).all()
         return render(request, "operators.html", op, operators=ops)
 
+    def _perms_from_form(form) -> str:
+        return ",".join(parse_perms(",".join(form.getlist("perm"))))
+
     @app.post("/admin/operators")
-    async def operator_add(request: Request, username: str = Form(""), password: str = Form(""),
-                           full_name: str = Form(""), role: str = Form("")):
+    async def operator_add(request: Request):
+        form = await request.form()
         lg = lang(request)
+        username = str(form.get("username", "")).strip()
+        password = str(form.get("password", ""))
+        role = "admin" if form.get("role") == "admin" else "operator"
+        permissions = _perms_from_form(form)
         async with SessionLocal() as s:
             await current(request, s, admin=True)
-            username = username.strip()
-            if not username or len(password) < 4 or role not in ROLES:
+            if not username or len(password) < 4:
                 flash(request, tr(lg, "fill_required"), "error")
+            elif role == "operator" and not any(k in permissions.split(",") for k in KINDS):
+                flash(request, tr(lg, "need_direction"), "error")
             elif await s.scalar(select(Operator.id).where(Operator.username == username)):
                 flash(request, tr(lg, "username_taken"), "error")
             else:
                 s.add(Operator(username=username, password_hash=hash_password(password),
-                               full_name=full_name.strip(), role=role))
+                               full_name=str(form.get("full_name", "")).strip(), role=role,
+                               permissions="" if role == "admin" else permissions))
                 await s.commit()
-                flash(request, tr(lg, "saved"))
+                flash(request, f"{tr(lg, 'saved')}: {username}")
         return RedirectResponse("/admin/operators", status_code=303)
 
     @app.post("/admin/operators/{op_id}")
-    async def operator_edit(request: Request, op_id: int, full_name: str = Form(""), role: str = Form(""),
-                            password: str = Form(""), is_active: str = Form("")):
+    async def operator_edit(request: Request, op_id: int):
+        form = await request.form()
+        lg = lang(request)
         async with SessionLocal() as s:
             me = await current(request, s, admin=True)
             target = await s.get(Operator, op_id)
-            if target:
-                target.full_name = full_name.strip()
-                if role in ROLES and target.id != me.id:
-                    target.role = role
-                if target.id != me.id:
-                    target.is_active = bool(is_active)
-                if password:
-                    if len(password) < 4:
-                        flash(request, tr(lang(request), "fill_required"), "error")
-                        return RedirectResponse("/admin/operators", status_code=303)
-                    target.password_hash = hash_password(password)
-                await s.commit()
-                flash(request, tr(lang(request), "saved"))
+            if not target:
+                return RedirectResponse("/admin/operators", status_code=303)
+            password = str(form.get("password", ""))
+            if password and len(password) < 4:
+                flash(request, tr(lg, "fill_required"), "error")
+                return RedirectResponse("/admin/operators", status_code=303)
+            target.full_name = str(form.get("full_name", "")).strip()
+            if target.id != me.id:  # an admin cannot lock themselves out
+                role = "admin" if form.get("role") == "admin" else "operator"
+                permissions = _perms_from_form(form)
+                if role == "operator" and not any(k in permissions.split(",") for k in KINDS):
+                    flash(request, tr(lg, "need_direction"), "error")
+                    return RedirectResponse("/admin/operators", status_code=303)
+                target.role = role
+                target.permissions = "" if role == "admin" else permissions
+                target.is_active = bool(form.get("is_active"))
+            if password:
+                target.password_hash = hash_password(password)
+            await s.commit()
+            flash(request, f"{tr(lg, 'saved')}: {target.username}")
         return RedirectResponse("/admin/operators", status_code=303)
 
     # ----- Excel export -----
@@ -516,6 +541,8 @@ def _routes(app: FastAPI) -> None:
     async def export_cargos(request: Request, q: str = "", kind: str = "", status: str = ""):
         async with SessionLocal() as s:
             op = await current(request, s)
+            if not can(op, "export"):
+                raise Forbidden()
             cargos = (await s.scalars(
                 cargo_query(op, q, kind, status).options(selectinload(Cargo.client)).order_by(Cargo.updated_at.desc())
             )).all()

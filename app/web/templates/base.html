@@ -18,7 +18,7 @@
     <nav class="nav">
       <a href="/" class="{{ 'on' if path == '/' or path.startswith('/cargo/') }}">📦 {{ t('dashboard') }}</a>
       <a href="/scan" class="{{ 'on' if path == '/scan' }}">📷 {{ t('scan') }}</a>
-      <a href="/cargo-new" class="{{ 'on' if path == '/cargo-new' }}">➕ {{ t('new_cargo') }}</a>
+      {% if can(op, 'add') %}<a href="/cargo-new" class="{{ 'on' if path == '/cargo-new' }}">➕ {{ t('new_cargo') }}</a>{% endif %}
       <a href="/clients" class="{{ 'on' if path.startswith('/clients') }}">👥 {{ t('clients') }}</a>
       {% if op.role == 'admin' %}
       <a href="/admin/operators" class="{{ 'on' if path == '/admin/operators' }}">🛡 {{ t('operators') }}</a>
@@ -29,7 +29,7 @@
     <div class="side-foot">
       <button type="button" id="notifyBtn" class="btn sm ghost" style="width:100%;margin-bottom:10px;justify-content:center" hidden>🔔 {{ t('live_enable') }}</button>
       <div><b>{{ op.full_name or op.username }}</b></div>
-      <div>{{ role_name(op.role) }}</div>
+      <div>{{ role_name(op.role) }}{% if op.role != 'admin' %} · {{ op_kinds(op)|join(', ') or '—' }}{% endif %}</div>
       <div style="margin-top:8px;display:flex;gap:6px;align-items:center" class="langs">
         <a href="/lang/uz" class="{{ 'on' if lang == 'uz' }}">UZ</a>
         <a href="/lang/ru" class="{{ 'on' if lang == 'ru' }}">RU</a>

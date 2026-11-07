@@ -64,7 +64,7 @@
   {% else %}
   <div class="card">
     <div class="flash error">{{ t('not_found') }}: <span class="mono">{{ code }}</span></div>
-    <a class="btn" href="/cargo-new?tracking={{ code|urlencode }}">➕ {{ t('create_with_code') }}</a>
+    {% if can(op, 'add') %}<a class="btn" href="/cargo-new?tracking={{ code|urlencode }}">➕ {{ t('create_with_code') }}</a>{% endif %}
   </div>
   {% endif %}
 {% endif %}

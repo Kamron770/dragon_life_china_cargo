@@ -3,7 +3,7 @@
 {% block heading %}📦 {{ t('dashboard') }}{% endblock %}
 {% block actions %}
   <a class="btn dark" href="/scan">📷 {{ t('scan') }}</a>
-  <a class="btn" href="/cargo-new">➕ {{ t('new_cargo') }}</a>
+  {% if can(op, 'add') %}<a class="btn" href="/cargo-new">➕ {{ t('new_cargo') }}</a>{% endif %}
 {% endblock %}
 {% block content %}
 <div class="stats" data-live="stats">
@@ -30,7 +30,7 @@
     </select>
     <button class="btn">{{ t('filter') }}</button>
     <a class="btn ghost" href="/">{{ t('reset') }}</a>
-    <a class="btn ghost" href="/export/cargos.xlsx?{{ export_qs }}">📥 {{ t('export_excel') }}</a>
+    {% if can(op, 'export') %}<a class="btn ghost" href="/export/cargos.xlsx?{{ export_qs }}">📥 {{ t('export_excel') }}</a>{% endif %}
   </form>
 </div>
 
