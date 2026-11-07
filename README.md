@@ -26,15 +26,15 @@ Hammasi bitta `python main.py` buyrug'i bilan ishga tushadi.
 
 ## Yuk holatlari
 
-| # | Holat | Kim o'zgartiradi |
+| # | Holat | Kim o'zgartiradi (namuna) |
 |---|-------|------------------|
-| 1 | ⏳ Xitoydagi omborga kelishi kutilmoqda | mijoz (bot) / Xitoy operatori |
-| 2 | 🏬 Xitoydagi omborga yetib keldi | Xitoy operatori |
-| 3 | 🚚 Xitoydan jo'natildi (yo'lda) | Xitoy operatori |
+| 1 | ⏳ Xitoydagi omborga kelishi kutilmoqda | mijoz (bot) / Xitoy omboridagi operator |
+| 2 | 🏬 Xitoydagi omborga yetib keldi | Xitoy omboridagi operator |
+| 3 | 🚚 Xitoydan jo'natildi (yo'lda) | Xitoy omboridagi operator |
 | 4 | 🇺🇿 O'zbekistonga yetib keldi (Toshkent ombori) | O'zbekiston operatori |
 | 5 | ✅ Mijozga topshirildi (yakunlangan) | O'zbekiston operatori |
 
-Administrator istalgan holatni qo'ya oladi.
+Kim qaysi holatni qo'ya olishini administrator har bir operator uchun o'zi belgilaydi; administrator istalgan holatni qo'ya oladi.
 
 ## Veb-panel
 
