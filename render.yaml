@@ -4,7 +4,7 @@ services:
   - type: web
     name: dragonlife-cargo
     runtime: python
-    plan: free
+    plan: starter            # $7/mo: never sleeps (free = sleeps after 15 min)
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     healthCheckPath: /healthz
@@ -26,6 +26,6 @@ services:
 
 databases:
   - name: dragonlife-db
-    plan: free
+    plan: basic-256mb        # ~$6/mo + storage: no expiry date (free = deleted after a while)
     databaseName: dragonlife
     user: dragonlife

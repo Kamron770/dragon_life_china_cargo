@@ -119,7 +119,7 @@ Agar `ADMIN_PASSWORD` umuman berilmagan bo'lsa, birinchi ishga tushishda tasodif
 - Uyg'onganda bot foydalanuvchi qaysi qadamda turganini unutadi (masalan, trek kod kiritish oynasi) — mijoz menyudan qaytadan tanlaydi. Ro'yxatdan o'tish va yuklar bazada saqlanib qoladi.
 - Bepul PostgreSQL bazasining **muddati cheklangan** (Render shartlarini tekshiring) — muddat tugasa ma'lumotlar o'chadi.
 
-**Haqiqiy ish uchun** (mijozlar bilan) pullik tarifga o'ting: Render'da web servisni **Starter** ga, bazani pullik **PostgreSQL** ga o'zgartiring — `render.yaml` dagi `plan: free` qatorlarini almashtirish kifoya. Shunda server uxlamaydi va baza doimiy saqlanadi.
+**Haqiqiy ish uchun** (mijozlar bilan) pullik tarifga o'ting (`render.yaml` endi Starter + Basic-256mb, taxminan $13–14/oy): Render'da web servisni **Starter** ga, bazani pullik **PostgreSQL** ga o'zgartiring — `render.yaml` dagi `plan: free` qatorlarini almashtirish kifoya. Shunda server uxlamaydi va baza doimiy saqlanadi.
 
 ### 📥 Excel'ga yuklab olish
 
