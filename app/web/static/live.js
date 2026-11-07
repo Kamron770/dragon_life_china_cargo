@@ -110,7 +110,11 @@
     let state;
     try {
       const r = await fetch('/api/updates' + (base ? `?since_id=${base.last_id}` : ''), { cache: 'no-store', credentials: 'same-origin' });
-      if (r.status === 401) { clearInterval(timer); return; }
+      if (r.status === 401) {  // logged out (idle too long, or from another tab): hide the panel
+        clearInterval(timer);
+        location.href = '/login?expired=1';
+        return;
+      }
       if (!r.ok) return;
       state = await r.json();
     } catch (e) { return; }  // offline / server waking up — try again next time

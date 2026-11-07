@@ -1,5 +1,6 @@
 import asyncio
 import io
+import time
 import math
 from pathlib import Path
 from urllib.parse import urlencode
@@ -44,12 +45,23 @@ class Forbidden(Exception):
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Dragon Life Cargo", docs_url=None, redoc_url=None, openapi_url=None)
-    app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, max_age=60 * 60 * 24 * 14, same_site="lax")
+    # max_age=None → the login cookie is deleted when the browser is closed.
+    # On an https host (Render) the cookie is never sent over plain http.
+    app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, max_age=None, same_site="lax",
+                       https_only=settings.WEBHOOK_BASE.startswith("https://"))
+
+    @app.middleware("http")
+    async def _no_cache_pages(request: Request, call_next):
+        # After logout the browser "Back" button must not show cached panel pages
+        response = await call_next(request)
+        if response.headers.get("content-type", "").startswith(("text/html", "application/json")):
+            response.headers["Cache-Control"] = "no-store"
+        return response
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 
     @app.exception_handler(LoginRequired)
     async def _login_required(request: Request, exc):
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/login?expired=1" if exc.args and exc.args[0] == "expired" else "/login", status_code=303)
 
     @app.exception_handler(Forbidden)
     async def _forbidden(request: Request, exc):
@@ -70,12 +82,37 @@ def flash(request: Request, msg: str, kind: str = "ok") -> None:
     request.session.setdefault("flash", []).append([kind, msg])
 
 
-async def current(request: Request, s, admin: bool = False) -> Operator:
+def _logout(request: Request) -> None:
+    lg = request.session.get("lang")
+    request.session.clear()
+    if lg:
+        request.session["lang"] = lg
+
+
+async def session_operator(request: Request, s, touch: bool = True) -> tuple[Operator | None, bool]:
+    """Logged-in operator, or (None, expired?). touch=False for background checks that are not user activity."""
     op_id = request.session.get("op")
-    op = await s.get(Operator, op_id) if op_id else None
+    if not op_id:
+        return None, False
+    now = time.time()
+    seen = request.session.get("seen", 0)
+    started = request.session.get("login_at", 0)
+    if now - seen > settings.SESSION_IDLE_MINUTES * 60 or now - started > settings.SESSION_MAX_HOURS * 3600:
+        _logout(request)
+        return None, True
+    op = await s.get(Operator, op_id)
     if not op or not op.is_active:
-        request.session.pop("op", None)
-        raise LoginRequired()
+        _logout(request)
+        return None, False
+    if touch:
+        request.session["seen"] = int(now)
+    return op, False
+
+
+async def current(request: Request, s, admin: bool = False) -> Operator:
+    op, expired = await session_operator(request, s)
+    if not op:
+        raise LoginRequired("expired" if expired else "")
     if admin and op.role != "admin":
         raise Forbidden()
     return op
@@ -173,10 +210,9 @@ def _routes(app: FastAPI) -> None:
     async def updates(request: Request, since_id: int = 0):
         """Cheap check used by live.js every few seconds: has anything changed?"""
         async with SessionLocal() as s:
-            op_id = request.session.get("op")
-            op = await s.get(Operator, op_id) if op_id else None
-            if not op or not op.is_active:
-                return JSONResponse({"error": "login"}, status_code=401)
+            op, expired = await session_operator(request, s, touch=False)  # polling is not activity
+            if not op:
+                return JSONResponse({"error": "expired" if expired else "login"}, status_code=401)
             kinds = op_kinds(op)
             last_id, changed, total = (await s.execute(
                 select(func.max(Cargo.id), func.max(Cargo.updated_at), func.count(Cargo.id)).where(Cargo.kind.in_(kinds))
@@ -201,7 +237,9 @@ def _routes(app: FastAPI) -> None:
 
     # ----- auth -----
     @app.get("/login")
-    async def login_page(request: Request):
+    async def login_page(request: Request, expired: str = ""):
+        if expired:
+            flash(request, tr(lang(request), "session_expired"), "error")
         return render(request, "login.html")
 
     @app.post("/login")
@@ -211,12 +249,14 @@ def _routes(app: FastAPI) -> None:
         if not op or not op.is_active or not verify_password(password, op.password_hash):
             flash(request, tr(lang(request), "bad_login"), "error")
             return RedirectResponse("/login", status_code=303)
-        request.session["op"] = op.id
+        _logout(request)  # start from a clean session
+        now = int(time.time())
+        request.session.update(op=op.id, login_at=now, seen=now)
         return RedirectResponse("/", status_code=303)
 
     @app.get("/logout")
     async def logout(request: Request):
-        request.session.pop("op", None)
+        _logout(request)
         return RedirectResponse("/login", status_code=303)
 
     # ----- cargo list -----

@@ -58,6 +58,8 @@ Sahifalar:
 
 Panel o'zbek va rus tillarida (pastki chap burchakda UZ / RU).
 
+**Xavfsizlik:** brauzer yopilsa — tizimdan chiqiladi; 60 daqiqa hech narsa bosilmasa — avtomatik chiqadi (ochiq qolgan ekran kirish sahifasiga qaytadi); har qanday holatda 12 soatdan keyin qayta kirish so'raladi. Vaqtlarni Render → Environment'da `SESSION_IDLE_MINUTES` va `SESSION_MAX_HOURS` bilan o'zgartirish mumkin. Chiqqandan keyin brauzerning «Orqaga» tugmasi panel sahifalarini ko'rsatmaydi.
+
 ---
 
 ## O'rnatish

@@ -45,6 +45,10 @@ class Settings:
     # Set ADMIN_RESET=1 and restart → admin password becomes ADMIN_PASSWORD again. Remove it afterwards.
     ADMIN_RESET: bool = os.getenv("ADMIN_RESET", "").strip().lower() in ("1", "true", "yes", "ha")
 
+    # Panel login: logged out after this many minutes without clicks, and after this many hours in any case
+    SESSION_IDLE_MINUTES: int = _int("SESSION_IDLE_MINUTES", 60)
+    SESSION_MAX_HOURS: int = _int("SESSION_MAX_HOURS", 12)
+
     WEB_HOST: str = os.getenv("WEB_HOST", "0.0.0.0")
     WEB_PORT: int = _int("PORT", _int("WEB_PORT", 8000))  # Render sets PORT
 
